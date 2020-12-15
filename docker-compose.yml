@@ -1,0 +1,60 @@
+version: '2'
+
+#letsencrypt server (nginx)
+
+services:
+  letsencrypt:
+    image: linuxserver/letsencrypt
+    container_name: letsencrypt
+    cap_add:
+      - NET_ADMIN
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Asia/Tokyo
+      - URL=csgb.f5.si
+      - SUBDOMAINS=contents
+      - VALIDATION=http
+    ports:
+      - "80:80"
+      - "443:443"
+    restart: unless-stopped
+    links:
+      - wordpress
+    volumes:
+      - letsencrypt-config:/config
+
+  wordpress-mariadb:
+    image: mariadb
+    volumes:
+      - wordpress-db:/var/lib/mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: wordpress
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wordpress
+      MYSQL_PASSWORD: wordpress
+
+  # wordpress
+  wordpress:
+    image: wordpress:latest
+    ports:
+      - "8080:80"
+    links:
+      - wordpress-mariadb
+    restart: always
+    environment:
+      WORDPRESS_DB_HOST: wordpress-mariadb
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress
+      WORDPRESS_DB_NAME: wordpress
+    volumes:
+      - wordpress-files:/var/www/html
+
+volumes:
+  wordpress-files:
+    external: true
+  wordpress-db:
+    external: true
+  letsencrypt-config:
+    external: true
