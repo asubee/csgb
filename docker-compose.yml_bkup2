@@ -78,33 +78,6 @@ services:
     volumes:
       - wordpress-files-ggp:/var/www/html
 
-############# Lemonade Kids ################
-#  wordpress-mariadb-lemokids:
-#    image: mariadb
-#    volumes:
-#      - wordpress-db-lemokids:/var/lib/mysql
-#    restart: always
-#    environment:
-#      MYSQL_ROOT_PASSWORD: wordpress
-#      MYSQL_DATABASE: wordpress
-#      MYSQL_USER: wordpress
-#      MYSQL_PASSWORD: wordpress
-#
-#  wordpress-lemokids:
-#    image: wordpress:latest
-#    ports:
-#      - "28080:80"
-#    links:
-#      - wordpress-mariadb-lemokids
-#    restart: always
-#    environment:
-#      WORDPRESS_DB_HOST: wordpress-mariadb-lemokids
-#      WORDPRESS_DB_USER: wordpress
-#      WORDPRESS_DB_PASSWORD: wordpress
-#      WORDPRESS_DB_NAME: wordpress
-#    volumes:
-#      - wordpress-files-lemokids:/var/www/html
-
 volumes:
   wordpress-files:
     external: true
@@ -116,8 +89,4 @@ volumes:
     external: true
   wordpress-db-ggp:
     external: true
-#  wordpress-files-lemokids:
-#    external: true
-#  wordpress-db-lemokids:
-#    external: true
 
