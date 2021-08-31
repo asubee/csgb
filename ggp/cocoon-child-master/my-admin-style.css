@@ -1,0 +1,19 @@
+table.ggp_game_table {
+  border: 1px solid #CCCCCC;
+  width: 100%;
+  background-color: #F9F9F9;
+}
+
+table.ggp_team_table {
+  border: 1px solid #CCCCCC;
+  width: 100%;
+  background-color: #F9F9F9;
+}
+
+table.ggp_earth_table {
+  border: 1px solid #CCCCCC;
+  width: 30%;
+  background-color: #F9F9F9;
+}
+
+
