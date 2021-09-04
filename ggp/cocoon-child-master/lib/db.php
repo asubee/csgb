@@ -11,6 +11,7 @@ define('TABLE_NAME_GGP_EARTH',  $wpdb->prefix . 'ggp_earth');
 define('TABLE_NAME_GGP_TEAM',  $wpdb->prefix . 'ggp_team');
 define('TABLE_NAME_GGP_ACTION',  $wpdb->prefix . 'ggp_action');
 define('TABLE_NAME_GGP_ACTION_RICE',  $wpdb->prefix . 'ggp_action_rice');
+define('TABLE_NAME_GGP_ACTION_TREE',  $wpdb->prefix . 'ggp_action_tree');
 define('TABLE_NAME_GGP_MESSAGE',  $wpdb->prefix . 'ggp_message');
 
 add_action('admin_head', 'create_table_ggp');
@@ -20,6 +21,7 @@ function create_table_ggp(){
   create_table_ggp_team();
   create_table_ggp_action();
   create_table_ggp_action_rice();
+  create_table_ggp_action_tree();
   create_table_ggp_message();
 }
 endif;
@@ -345,6 +347,98 @@ function allow_insert_table_ggp_action($token){
   $result = get_db_table_records(TABLE_NAME_GGP_ACTION, 'token', $token);
   if(count($result) > 0 ) return false;
   return true;
+}
+endif;
+
+/****************************************************************
+* テーブル名：wp_ggp_action_tree
+*****************************************************************/
+if( !function_exists( 'create_table_ggp_action_tree' ) ):
+function create_table_ggp_action_tree() {
+  if (is_db_table_exist(TABLE_NAME_GGP_ACTION_TREE) ){
+    return;
+  }
+
+  $sql = "CREATE TABLE " .TABLE_NAME_GGP_ACTION_TREE." (
+          earth_no int,
+          team_no int,
+          tree_num int,
+          reduction_co2 int,
+          PRIMARY KEY(earth_no, team_no)
+          );";
+  $res = create_db_table($sql);
+  return $res;
+}
+endif;
+
+if( !function_exists( 'reset_table_ggp_action_tree') ):
+function reset_table_ggp_action_tree(){
+  uninstall_db_table(TABLE_NAME_GGP_ACTION_TREE);
+  create_table_ggp_action_tree();
+
+  $ggp_init_earth = get_option('ggp_init_earth');
+  $ggp_init_perteam = get_option('ggp_init_perteam');
+
+  for($i =0; $i < $ggp_init_earth; $i++){
+  for($j = 0; $j < $ggp_init_perteam; $j++){
+    $table = TABLE_NAME_GGP_ACTION_TREE;
+    $data = array(
+      'earth_no' => $i,
+      'team_no' => $j,
+      'tree_num' => 0,
+      'reduction_co2' => 0
+    );
+
+    $format = array(
+      '%d',
+      '%d',
+      '%d',
+      '%d'
+    );
+    insert_db_table_record($table, $data, $format);
+  }
+  }
+
+}
+endif;
+
+if( !function_exists(' insert_db_table_ggp_action_tree' ) ):
+function update_table_ggp_action_tree($earth_no, $team_no, $reduction_tree){
+  $reduction_tree_co2 = get_table_ggp_action_tree($earth_no, $team_no);
+  $table = TABLE_NAME_GGP_ACTION_TREE;
+
+  $data = array(
+            'tree_num'=>(int)$reduction_tree_co2[0]->tree_num + 1,
+            'reduction_co2'=>(int)$reduction_tree_co2[0]->reduction_co2 + $reduction_tree,
+            );
+  $where = array(
+            'earth_no' => $earth_no,
+            'team_no' => $team_no
+            );
+  $format = array(
+            '%d',
+            '%d'
+            );
+  $where_format = array(
+            '%d',
+            '%d'
+            );
+  return update_db_table_record($table, $data, $where, $format, $where_format);
+
+}
+endif;
+
+//テーブルからレコードの取得
+if ( !function_exists( 'get_table_ggp_action_tree' ) ):
+function get_table_ggp_action_tree($earth_no, $team_no){
+  $table = TABLE_NAME_GGP_ACTION_TREE;
+  global $wpdb;
+  $query = "SELECT tree_num, reduction_co2 FROM {$table} WHERE earth_no LIKE {$earth_no} AND team_no LIKE {$team_no}";
+
+  $records = $wpdb->get_results( $query );
+  //_v($query);
+
+  return $records;
 }
 endif;
 
