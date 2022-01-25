@@ -20,10 +20,13 @@ table.ggp_select_team {
   border: 0px none !important;
   width: 50%;
   background-color: #FFFFFF !important;
+  /*table-layout: fixed;*/
 }
 
 table.ggp_select_team th, td {
   border: 0px none !important;
+  word-break: break-word;
+  overflow: visible;
 }
 
 table.ggp_select_team tr:nth-of-type(2n+1) {
@@ -48,6 +51,16 @@ table.team_info tr:nth-of-type(2n+1) {
   background-color: transparent !important;
 }
 
+table.vote {
+  width: 100%;
+  max-width:1200px;
+  background-color: #FFFFFF !important;
+}
+
+table.vote tr, td {
+ background-color: #FFFFFF !important;
+}
+
 input.btn-select-team {
   color: #fff;
   background-color: #004831;
@@ -63,6 +76,13 @@ input.btn-select-team:hover {
 input.btn-return {
   color: #000;
   background-color: #f5f8fa;
+  font-size: 0.8em;
+  padding: 0.3em 2.0em;
+}
+
+input.btn-submit {
+  color: #fff;
+  background-color: #004831;
   font-size: 0.8em;
   padding: 0.3em 2.0em;
 }
@@ -102,6 +122,22 @@ input.btn-reload{
   border: 0px !important;
 }
 
+input.btn-select-event{
+  color: #fff;
+  background-color: #004831;
+}
+
+input.btn-select-event:disabled {
+  color: #000;
+  background-color: #808080;
+}
+
+input.btn-select-event-selected:disabled {
+  color: #000;
+  background-color: #FFFFFF;
+}
+
+
 .header-div {
   overflow: hidden;
 }
@@ -135,7 +171,7 @@ p.subtitle {
 .card_area {
   position: absolute;
   left: 0%;
-  top: 5%;
+  top: 80px;
 /*  transform: translate(-50%,-50%); */
   width: 100%;
   background-color: #FAFBE5;
@@ -256,26 +292,49 @@ input.btn-timer {
 }
 
 div.popup_msg{
- display: none;
  z-index: 20;
- margin: 0;
+ margin: 5px 0px;
  padding: 10px;
- max-width: 1200px;
  width: 100%;
  background-color: #000;
  opacity: 0.6;
- color: #fff;
+ color: #FFF;
  border-radius: 5px;
  -moz-border-radius: 5px;
  min-height: 30px;
+}
+
+div.popup_msg_area {
+ max-width: 1200px;
+ width: 100%;
  top: 50px;
+ position: absolute;
  left: 50%;
  transform: translateX(-50%);
  -webkit-transform: translateX(-50%);
- -ms-transform: translateX(-50%); right: 50%;
-/* position: absolute; */
- position: fixed;
+ -ms-transform: translateX(-50%);
 }
+
+.canvasjs-chart-credit {
+    display: none;
+}
+
+div.result_canvas_parent {
+  overflow: hidden;
+}
+
+div.result_canvas_double_column {
+  float: left;
+  margin: 10px;
+  width: 45%;
+}
+
+div.result_canvas_single_column {
+  padding: 20px;
+  height: 500px;
+  width: 100%;
+}
+
 
 /************************************
 ** レスポンシブデザイン用のメディアクエリ
@@ -306,9 +365,10 @@ div.popup_msg{
 }
 
 .card_area {
-  position: relative;
+/*  position: relative; */
+  position: absolute;
   left: 0%;
-  top: 50%;
+  top: 20%;
   width: 100%;
   transform: none;
   background-color: #FAFBE5;
@@ -350,7 +410,7 @@ table.card_image td{
 }
 
 
-}
+
 
 /*480px以下*/
 @media screen and (max-width: 480px){

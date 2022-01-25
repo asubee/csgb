@@ -13,7 +13,7 @@ services:
       - PGID=1000
       - TZ=Asia/Tokyo
       - URL=csgb.f5.si
-      - SUBDOMAINS=contents, ggp, event
+      - SUBDOMAINS=contents, event
       - VALIDATION=http
     ports:
       - "80:80"
