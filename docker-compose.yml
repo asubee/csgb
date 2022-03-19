@@ -13,7 +13,7 @@ services:
       - PGID=1000
       - TZ=Asia/Tokyo
       - URL=csgb.f5.si
-      - SUBDOMAINS=contents, event
+      - SUBDOMAINS=moudame, contents, event
       - VALIDATION=http
     ports:
       - "80:80"
@@ -51,6 +51,24 @@ services:
     volumes:
       - wordpress-files:/var/www/html
 
+############# もうだめ君ファンサイト ################
+
+  wordpress-moudame:
+    image: wordpress:latest
+    ports:
+      - "28080:80"
+    links:
+      - wordpress-mariadb
+    restart: always
+    environment:
+      WORDPRESS_DB_HOST: wordpress-mariadb
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress
+      WORDPRESS_DB_NAME: wordpress_moudame
+    volumes:
+      - wordpress-files-moudame:/var/www/html
+
+
 ############# Green Grobe Partners ################
   wordpress-mariadb-ggp:
     image: mariadb
@@ -78,32 +96,6 @@ services:
     volumes:
       - wordpress-files-ggp:/var/www/html
 
-############# Lemonade Kids ################
-#  wordpress-mariadb-lemokids:
-#    image: mariadb
-#    volumes:
-#      - wordpress-db-lemokids:/var/lib/mysql
-#    restart: always
-#    environment:
-#      MYSQL_ROOT_PASSWORD: wordpress
-#      MYSQL_DATABASE: wordpress
-#      MYSQL_USER: wordpress
-#      MYSQL_PASSWORD: wordpress
-#
-#  wordpress-lemokids:
-#    image: wordpress:latest
-#    ports:
-#      - "28080:80"
-#    links:
-#      - wordpress-mariadb-lemokids
-#    restart: always
-#    environment:
-#      WORDPRESS_DB_HOST: wordpress-mariadb-lemokids
-#      WORDPRESS_DB_USER: wordpress
-#      WORDPRESS_DB_PASSWORD: wordpress
-#      WORDPRESS_DB_NAME: wordpress
-#    volumes:
-#      - wordpress-files-lemokids:/var/www/html
 
 volumes:
   wordpress-files:
@@ -116,8 +108,6 @@ volumes:
     external: true
   wordpress-db-ggp:
     external: true
-#  wordpress-files-lemokids:
-#    external: true
-#  wordpress-db-lemokids:
-#    external: true
+  wordpress-files-moudame:
+    external: true
 

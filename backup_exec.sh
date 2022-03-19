@@ -54,8 +54,7 @@ trap finally EXIT
 # エラーを捕捉する行はすべて最後に「 2>&1」をつける
 ################################################################################
 
-cp -r ${GGP_VOLUME_DIR} ${GIT_REPOSITORY} 2>&1
-su ec2-user
+sudo cp -r ${GGP_VOLUME_DIR} ${GIT_REPOSITORY} 2>&1
 cd ${GIT_REPOSITORY}
 git add -A ${GIT_REPOSITORY}/* 2>&1
 git commit -m "backup :`date "+%Y%m%d_%H%M%S"`" 2>&1
