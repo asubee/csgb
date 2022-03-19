@@ -24,7 +24,8 @@ services:
     volumes:
       - letsencrypt-config:/config
 
-############# コミュ研beta ################
+############# 共用データベース ################
+
   wordpress-mariadb:
     image: mariadb
     volumes:
@@ -35,6 +36,8 @@ services:
       MYSQL_DATABASE: wordpress
       MYSQL_USER: wordpress
       MYSQL_PASSWORD: wordpress
+
+############# コミュ研beta ################
 
   wordpress:
     image: wordpress:latest
@@ -62,7 +65,7 @@ services:
     restart: always
     environment:
       WORDPRESS_DB_HOST: wordpress-mariadb
-      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_USER: wordpress_moudame
       WORDPRESS_DB_PASSWORD: wordpress
       WORDPRESS_DB_NAME: wordpress_moudame
     volumes:
@@ -70,16 +73,17 @@ services:
 
 
 ############# Green Grobe Partners ################
-  wordpress-mariadb-ggp:
-    image: mariadb
-    volumes:
-      - wordpress-db-ggp:/var/lib/mysql
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: wordpress
-      MYSQL_DATABASE: wordpress
-      MYSQL_USER: wordpress
-      MYSQL_PASSWORD: wordpress
+
+#  wordpress-mariadb-ggp:
+#    image: mariadb
+#    volumes:
+#      - wordpress-db-ggp:/var/lib/mysql
+#    restart: always
+#    environment:
+#      MYSQL_ROOT_PASSWORD: wordpress
+#      MYSQL_DATABASE: wordpress
+#      MYSQL_USER: wordpress
+#      MYSQL_PASSWORD: wordpress
 
   wordpress-ggp:
     image: wordpress:latest
@@ -89,10 +93,10 @@ services:
       - wordpress-mariadb
     restart: always
     environment:
-      WORDPRESS_DB_HOST: wordpress-mariadb-ggp
-      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_HOST: wordpress-mariadb
+      WORDPRESS_DB_USER: wordpress_ggp
       WORDPRESS_DB_PASSWORD: wordpress
-      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DB_NAME: wordpress_ggp
     volumes:
       - wordpress-files-ggp:/var/www/html
 
@@ -106,8 +110,8 @@ volumes:
     external: true
   wordpress-files-ggp:
     external: true
-  wordpress-db-ggp:
-    external: true
+#  wordpress-db-ggp:
+#    external: true
   wordpress-files-moudame:
     external: true
 
