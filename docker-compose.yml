@@ -4,7 +4,8 @@ version: '2'
 
 services:
   letsencrypt:
-    image: linuxserver/letsencrypt
+    image: linuxserver/swag
+#    image: linuxserver/letsencrypt
     container_name: letsencrypt
     cap_add:
       - NET_ADMIN
@@ -20,7 +21,9 @@ services:
       - "443:443"
     restart: unless-stopped
     links:
-      - wordpress
+      - wordpress-moudame
+      - wordpress-ggp
+#      - wordpress
     volumes:
       - letsencrypt-config:/config
 
@@ -39,20 +42,20 @@ services:
 
 ############# コミュ研beta ################
 
-  wordpress:
-    image: wordpress:latest
-    ports:
-      - "8080:80"
-    links:
-      - wordpress-mariadb
-    restart: always
-    environment:
-      WORDPRESS_DB_HOST: wordpress-mariadb
-      WORDPRESS_DB_USER: wordpress
-      WORDPRESS_DB_PASSWORD: wordpress
-      WORDPRESS_DB_NAME: wordpress
-    volumes:
-      - wordpress-files:/var/www/html
+#  wordpress:
+#    image: wordpress:latest
+#    ports:
+#      - "8080:80"
+#    links:
+#      - wordpress-mariadb
+#    restart: always
+#    environment:
+#      WORDPRESS_DB_HOST: wordpress-mariadb
+#      WORDPRESS_DB_USER: wordpress
+#      WORDPRESS_DB_PASSWORD: wordpress
+#      WORDPRESS_DB_NAME: wordpress
+#    volumes:
+#      - wordpress-files:/var/www/html
 
 ############# もうだめ君ファンサイト ################
 

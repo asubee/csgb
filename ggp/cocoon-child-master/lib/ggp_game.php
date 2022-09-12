@@ -106,7 +106,7 @@ if( !function_exists('show_ggp_gameboard_earth_select') ):
 
     if( $is_general == NULL ) $is_general = "disabled" ;
 
-    if($ggp_game_ieset == "1"){
+    if($ggp_game_reset == "1"){
       reset_table_ggp_all();
     }
     // 出力のバッファリング開始
@@ -546,7 +546,8 @@ if( !function_exists( 'show_ggp_gameboard_main' ) ):
       <input type="hidden" id="is_event_valid_tree" value="<?=$ggp_earth[0]->event_valid_tree ?>">
       <input type="hidden" id="is_event_valid_sales" value="<?=$ggp_earth[0]->event_valid_sales ?>">
       <input type="hidden" id="popup_msg_latest_id" value="<?php 
-        if(count($ggp_message[0]) == 0){
+      //  if(count($ggp_message[0]) == 0){
+        if(count($ggp_message) == 0){
           echo "0";
         }else{
           echo $ggp_message[0]->id;

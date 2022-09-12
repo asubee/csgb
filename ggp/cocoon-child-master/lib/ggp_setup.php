@@ -291,6 +291,7 @@ for($tree_card_no = 0; $tree_card_no < count($ggp_cardinfo['reduction']); $tree_
 }
 
 function register_ggp_team_setup(){
+
 }
 
 /****************************************************************
@@ -320,17 +321,18 @@ if($is_reset == "初期化"){
       update_table_ggp_earth($earth_no, $co2);
 }else{
   if($teamname != NULL){
-      update_table_ggp_team($earth_no, $team_no, $teamname, $money, $co2);
-      $ggp_team = get_db_table_records(TABLE_NAME_GGP_TEAM,'');
-      $co2_sum = Array();
-      foreach($ggp_team as $team ){
-        $co2_sum[$team->earth_no] += $team->co2;
-      }
-
-      for($i = 0; $i < count($co2_sum); $i++ ){
-        update_table_ggp_earth($i, $co2_sum[$i]);
-      }
+    for($i = 0; $i < count($teamname); $i++){
+      update_table_ggp_team($earth_no[$i], $team_no[$i], $teamname[$i], $money[$i], $co2[$i]);
     }
+    $ggp_team = get_db_table_records(TABLE_NAME_GGP_TEAM,'');
+    $co2_sum = Array();
+    foreach($ggp_team as $team ){
+      $co2_sum[$team->earth_no] += $team->co2;
+    }
+    for($i = 0; $i < count($co2_sum); $i++ ){
+      update_table_ggp_earth($i, $co2_sum[$i]);
+    }
+  }
 }
 
 $ggp_team = get_db_table_records(TABLE_NAME_GGP_TEAM,'');
@@ -348,21 +350,22 @@ $ggp_earth = get_db_table_records(TABLE_NAME_GGP_EARTH,'');
         <h3 class="hndle"><span>チーム設定</span></h3>
         <div class="inside">
           <div class="main">
+          <form method="post" action="">
           <table class="ggp_team_table">
-          <tr><th style="width:5%">地球</th><th style="width:5%;">チーム</th><th style="width=20%;">チーム名</th><th style="width:10%;">ターン</th><th style="width:10%;">お金</th><th style="width:10%;">CO2排出量</th><th style="width:5%;"></th></tr>
+          <tr><th style="width:5%">地球</th><th style="width:5%;">チーム</th><th style="width=20%;">チーム名</th><th style="width:10%;">ターン</th><th style="width:10%;">お金</th><th style="width:10%;">CO2排出量</th></tr>
           <?php
           for($i = 0; $i < count($ggp_team); $i++){
           ?>
-          <tr><form method="post" action="">
-          <td><input type="text" id="earth_no" name="earth_no" value=<?php echo $ggp_team[$i]->earth_no; ?> readonly style="width:100%;"></td>
-          <td><input type="text" id="team_no" name="team_no" value=<?php echo $ggp_team[$i]->team_no; ?> readonly style="width:100%;"></td>
-          <td><input type="text" id="teamname" name="teamname" value = <?php echo $ggp_team[$i]->teamname ?> style="width:100%;"></td>
-          <td><input type="text" value=<?php echo $ggp_team[$i]->turn; ?> readonly style="width:100%;"></td>
-          <td><input type="text" id="money" name="money" value = <?php echo $ggp_team[$i]->money ?> style="width:100%;"></td>
-          <td><input type="text" id="co2" name="co2" value = <?php echo $ggp_team[$i]->co2 ?> style="width:100%;"></td>
-          <td><?php submit_button("更新",'small','update',false) ?></td></form></tr>
+          <tr>
+          <td><input type="text" id="earth_no[<?=$i ?>]" name="earth_no[<?=$i ?>]" value=<?=$ggp_team[$i]->earth_no ?> readonly style="width:100%;"></td>
+          <td><input type="text" id="team_no[<?=$i ?>]" name="team_no[<?=$i ?>]" value=<?=$ggp_team[$i]->team_no ?> readonly style="width:100%;"></td>
+          <td><input type="text" id="teamname[<?=$i ?>]" name="teamname[<?=$i ?>]" value=<?=$ggp_team[$i]->teamname ?> style="width:100%;"></td>
+          <td><input type="text" value=<?=$ggp_team[$i]->turn ?> readonly style="width:100%;"></td>
+          <td><input type="text" id="money[<?=$i ?>]" name="money[<?=$i ?>]" value = <?=$ggp_team[$i]->money ?> style="width:100%;"></td>
+          <td><input type="text" id="co2[<?=$i ?>]" name="co2[<?=$i ?>]" value = <?=$ggp_team[$i]->co2 ?> style="width:100%;"></td></tr>
           <?php } ?>
           </table>
+          <?php submit_button("チーム設定を更新",'primary','update',false) ?></form>
           </div>
         </div>
         <h3 class="hndle"><span>地球設定</span></h3>
@@ -373,8 +376,8 @@ $ggp_earth = get_db_table_records(TABLE_NAME_GGP_EARTH,'');
         for($i = 0; $i < count($ggp_earth); $i++){
         ?>
         <tr><form method="post" action="">
-        <td><input type="text" id="earth_no" name="earth_no" value=<?php echo $ggp_earth[$i]->earth_no; ?> readonly style="width:100%;"></td>
-        <td><input type="text" id="co2" name="co2" value=<?php echo $ggp_earth[$i]->co2; ?> style="width:100%;"></td><input type="hidden" id="earth_update" name="earth_update" value=true></td>
+        <td><input type="text" id="earth_no" name="earth_no" value=<?= $ggp_earth[$i]->earth_no ?> readonly style="width:100%;"></td>
+        <td><input type="text" id="co2" name="co2" value=<?=$ggp_earth[$i]->co2 ?> style="width:100%;"></td><input type="hidden" id="earth_update" name="earth_update" value=true></td>
           <td><?php submit_button("更新",'small','update',false) ?></td></form></tr>
       <?php } ?>
       </table>

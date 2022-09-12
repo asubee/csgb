@@ -89,6 +89,7 @@ input.btn-submit {
 
 input.btn-select-phase {
   color: #fff;
+  border: none;
   background-color: #004831;
   font-size: 1.0em;
   width: 70%;
