@@ -46,14 +46,9 @@ if (! function_exists( 'show_ggp_gameboard') ):
         return;
       }
     }
-    else if($mode == "select_event" && $earth_no != NULL && $team_no != NULL){
-      if(check_ggp_earth_no_validate($ggp_init_earth, $earth_no) && 
-          check_ggp_team_no_validate($ggp_init_perteam, $team_no) ){
+    else if($mode == "select_event"){
         show_ggp_event();
-      }else{
-        echo ggp_error("earth_no, team_noが不正です。earth_no = {$earth_no}, team_no = {$team_no}");
         return;
-      }
     }
     else{
       // ショートコードは、htmlをreturnで返す必要があるため
@@ -144,6 +139,8 @@ if( !function_exists('show_ggp_gameboard_earth_select') ):
     ?>
       <tr><td><div style="width:100%; height:100px"></div></td></tr>
 
+
+
       <form method="post" action="/ggp_graph/">
       <tr><td>
       <input type="submit" value="結果のグラフを表示する">
@@ -208,7 +205,20 @@ if( !function_exists( 'show_ggp_gameboard_team_select' ) ):
           <input class="btn-select-team" type="submit" value="<?=$ggp_team[$earth_no*$ggp_init_perteam+$i]->teamname ?>">
           </td></tr>
           </form>
-          <?php }
+      <?php } ?>
+      <tr><td><div style="width:100%; height:100px"></div></td></tr>
+      <tr><td>
+      <form method="post" action="">
+        <input type="hidden" id="earth_no" name="earth_no" value="<?=$earth_no ?>">
+        <input type="hidden" name="is_general" value="<?php echo $is_general; ?>">
+        <input type="hidden" name="mode" value="select_event">
+        <input type="submit" value="イベントの選択">
+      </form>
+      </td></tr>
+
+      </table>
+      </div>
+<?php
 
   }
 endif;
@@ -225,7 +235,13 @@ function is_btn_valid(){
 
   //【イベント】クリーンな電力を使用：選択できなくするカードのKey値
   $ggp_event_not_clean_energy = get_option("ggp_event_not_clean_energy");
+  //【イベント】クリーンな電力を使用：イベント発生有無の確認
   $is_ggp_event_clean_energy = is_ggp_event_clean_energy($earth_no, $team_no);
+
+  //【イベント】ガソリン車禁止：選択できなくするカードのKey値
+  $ggp_event_restriction_gascars = get_option("ggp_event_restriction_gascars");
+  //【イベント】ガソリン車禁止：イベント発生有無の確認
+  $is_ggp_event_restriction_gascars = is_ggp_event_restriction_gascars($earth_no, $team_no);
 
   //各フェーズの米の量を取得
   $get_db_table_ggp_action_rice = get_db_table_ggp_action_rice($earth_no, $team_no);
@@ -266,6 +282,11 @@ function is_btn_valid(){
         $value['is_valid'] = 'disabled';
       }
 
+      //【イベント】ガソリン車禁止：ガソリン車のカードを無効化する
+      if($is_ggp_event_restriction_gascars && !(array_search($value['key'],$ggp_event_restriction_gascars) === false)){
+        $value['is_valid'] = 'disabled';
+      }
+
     }
   }
   return $is_btn_valid;
@@ -293,8 +314,11 @@ if( !function_exists( 'show_ggp_gameboard_main' ) ):
     $is_general = $_POST['is_general'];
     $token = $_POST['token'];
     $id = $_POST['id'];
+    $team_objective = $_POST['team_objective'];
     $ggp_team = get_db_table_records_ggp(TABLE_NAME_GGP_TEAM,"earth_no",$earth_no);
     $ggp_earth = get_db_table_records_ggp(TABLE_NAME_GGP_EARTH,"earth_no",$earth_no);
+    $ggp_init_earth = get_option('ggp_init_earth');
+    $ggp_init_perteam = get_option('ggp_init_perteam');
     $ggp_quota_co2 = $ggp_earth[0]->co2_quota;
     $ggp_quota_turn = get_option('ggp_quota_turn');
     $ggp_cardinfo = get_option('ggp_cardinfo');
@@ -310,38 +334,22 @@ if( !function_exists( 'show_ggp_gameboard_main' ) ):
     $ggp_reduction_valid = get_option('ggp_reduction_valid');
     $ggp_event_popularity = get_option('ggp_event_popularity');
     $ggp_event_scandal = get_option('ggp_event_scandal');
+    $phase_name = get_option('ggp_phase_name');
+    $msg_array = get_option('ggp_msg_array');
+    $event_arise_turn = get_option('ggp_event_arise_turn');
     $ggp_action =  get_db_table_ggp_action($earth_no,$team_no);
     $ggp_event_protect_environment_action = get_option('ggp_event_protect_environment_action');
     $token_new = uniqid('', true);
     $error_msg = "";
 
     if($is_general == NULL)$is_general='disabled';
-
-
-    $phase_name = Array('grow'=>'お米を育てる',
-        'to_factory'=>'お米を工場に運ぶ',
-        'make'=>'おせんべいを作る',
-        'to_store'=>'おせんべいをお店に運ぶ',
-        'reduction'=>'環境対策',
-        'sales'=>'おせんべいを売る',
-        'event'=>'イベント');
-
-    $msg_array = Array( 'grow'=>'お米を育てました',
-        'to_factory'=>'お米を田んぼから工場に運びました',
-        'make'=>'工場でおせんべいを作りました',
-        'to_store'=>'おせんべいを工場からお店に運びました',
-        'reduction'=>'環境対策をしました',
-        'tree'=>'植えた木によって二酸化炭素が減りました',
-        'sales'=>'おせんべいを売りました');
-    $event_arise_turn = Array(5, 10, 14);
-
+    if($is_general == 'disabled'){
+      $error_msg .= '【参照のみ】カードを選ぶことはできません';
+    }
 
     //イベント用の変数
     $event_tree_msg_in_card = "【イベント発生中】「木を植える」カードの効果が" . $ggp_event_tree_magnification ."倍になりました。";
     $event_sales_msg_in_card = "【イベント発生中】売り上げが木を植えた回数&#x2613;" . (100*(double)$ggp_event_sales_magnification) ."％アップになりました。";
-
-    $event_tree_msg = "【イベント発生】「木を植える」カードの効果が" . $ggp_event_tree_magnification ."倍になりました。画面を更新してください。";
-    $event_sales_msg = "【イベント発生】売り上げが木を植えた回数&#x2613;" . (100*(double)$ggp_event_sales_magnification) ."％アップになりました。画面を更新してください。";
     $event_cancel_msg = "【イベントキャンセル】イベントがキャンセルされました。画面を更新してください。";
 
     $reduction_quantity_tree = (int)(get_table_ggp_action_tree($earth_no, $team_no))[0]->reduction_co2;
@@ -356,77 +364,77 @@ if( !function_exists( 'show_ggp_gameboard_main' ) ):
       $ggp_event_sales_magnification = 0;
     }
 
+    //チームの目標設定をする場合
+    if( $team_objective != NULL){
+      update_table_ggp_team_objective($earth_no, $team_no, $team_objective);
+    }else{
+      $team_objective = $ggp_team[$team_no]->team_objective;
+    }
+
     //カードが選択された場合
-    if( $phase != NULL &&
-        $card_no != NULL &&
-        check_allow_transaction($earth_no, $team_no, $id) &&
-         allow_insert_table_ggp_action($token)){
-      if($ggp_team[$team_no]->money < $ggp_cardinfo[$phase][$card_no]['money'] ){
+    if( $phase != NULL && $card_no != NULL){
+      if(check_allow_transaction($earth_no, $team_no, $id) == false){
+        $error_msg .= '不正な操作です。（最新のゲーム画面からの更新ではありません）<br>';
+      }else if(check_allow_transaction_sequence($earth_no, $team_no) == false){
+        $error_msg .= '不正な操作です。（前のチームのターンが終わっていません）<br>';
+      }else if(allow_insert_table_ggp_action($token) == false){
+        $error_msg .= '不正な操作です。（正しくゲームが更新されませんでした）<br>';
+      }else if($ggp_team[$team_no]->money < $ggp_cardinfo[$phase][$card_no]['money'] ){
         //お金が足りない場合
         $error_msg .= 'お金が足りません。カードを選びなおしてください。<br>';
-      } else if($ggp_init_co2_gameover == NULL && check_co2_over($earth_no, $team_no, $phase, $card_no)){
+      }else if($ggp_init_co2_gameover == NULL && check_co2_over($earth_no, $team_no, $phase, $card_no)){
         $error_msg .= '二酸化炭素の上限を超えてしまいます。カードを選びなおしてください。<br>';
       }else{
-//      } else if(check_allow_transaction($earth_no, $team_no, $id) && allow_insert_table_ggp_action($token)){
 
-        // 通常のカードの場合、情報を更新する
-        if($phase != 'reduction'){
+        // お米を育てる・工場にお米を運ぶフェーズの場合
+        if($phase == 'grow' || $phase == 'to_factory'){
           //選んだカードの内容を更新する
-          update_db_table_ggp_action_rice($earth_no, $team_no, $phase, $ggp_cardinfo[$phase][$card_no]['rice']);
-          insert_table_ggp_action($token, $earth_no, $team_no, $phase, $ggp_cardinfo[$phase][$card_no]['name'], $ggp_cardinfo[$phase][$card_no]['url'],$ggp_cardinfo[$phase][$card_no]['key'], -$ggp_cardinfo[$phase][$card_no]['money'], $ggp_cardinfo[$phase][$card_no]['co2'],$ggp_cardinfo[$phase][$card_no]['turn']);
+          update_table_ggp_action_rice($earth_no, $team_no, $phase, $ggp_cardinfo[$phase][$card_no]['rice']);
+          insert_table_ggp_action($token, $earth_no, $team_no, $phase, $ggp_team[$team_no]->turn, $ggp_cardinfo[$phase][$card_no]['name'], $ggp_cardinfo[$phase][$card_no]['url'],$ggp_cardinfo[$phase][$card_no]['key'], -$ggp_cardinfo[$phase][$card_no]['money'], $ggp_cardinfo[$phase][$card_no]['co2'],$ggp_cardinfo[$phase][$card_no]['turn'],$ggp_cardinfo[$phase][$card_no]['rice']);
           update_table_ggp_earth($earth_no, $ggp_earth[0]->co2+$ggp_cardinfo[$phase][$card_no]['co2']);
           update_table_ggp_team_transaction($earth_no, $team_no, $ggp_cardinfo[$phase][$card_no]['turn'], $ggp_cardinfo[$phase][$card_no]['money'], $ggp_cardinfo[$phase][$card_no]['co2']);
-          insert_db_table_ggp_message($earth_no, $ggp_team[$team_no]->turn.'ターン目 : 「'.$ggp_team[$team_no]->teamname.'」チームが'.$msg_array[$phase].'（'.$ggp_cardinfo[$phase][$card_no]['name'].'）。');
+          insert_table_ggp_message($earth_no, $ggp_team[$team_no]->turn.'ターン目 : 「'.$ggp_team[$team_no]->teamname.'」チームが'.$msg_array[$phase].'（'.$ggp_cardinfo[$phase][$card_no]['name'].'）。');
         }
-        // 環境対策のカードを選んだ場合
-        else {
-          if($ggp_cardinfo[$phase][$card_no]['key'] == 'tree'){
-            //植樹 カード切ったタイミングではCo2削減は実施しない
 
-            $tree_card_no = 0;
-            // key=treeとなっているカードの番号を探索する
-            for($tree_card_no = 0; $tree_card_no < count($ggp_cardinfo['reduction']); $tree_card_no++){
-              if($ggp_cardinfo['reduction'][$tree_card_no]['key'] == 'tree') break;
-            }
+        //工場で作るフェーズの場合
+        else if($phase == 'make'){
+          //工場でおせんべいを作る
+          update_table_ggp_action_rice($earth_no, $team_no, $phase, $ggp_cardinfo[$phase][$card_no]['rice']);
+          insert_table_ggp_action($token, $earth_no, $team_no, $phase, $ggp_team[$team_no]->turn, $ggp_cardinfo[$phase][$card_no]['name'], $ggp_cardinfo[$phase][$card_no]['url'],$ggp_cardinfo[$phase][$card_no]['key'], -$ggp_cardinfo[$phase][$card_no]['money'], $ggp_cardinfo[$phase][$card_no]['co2'],$ggp_cardinfo[$phase][$card_no]['turn'],$ggp_cardinfo[$phase][$card_no]['rice']);
+          update_table_ggp_earth($earth_no, $ggp_earth[0]->co2+$ggp_cardinfo[$phase][$card_no]['co2']);
+          update_table_ggp_team_transaction($earth_no, $team_no, $ggp_cardinfo[$phase][$card_no]['turn'], $ggp_cardinfo[$phase][$card_no]['money'], $ggp_cardinfo[$phase][$card_no]['co2']);
+          insert_table_ggp_message($earth_no, $ggp_team[$team_no]->turn.'ターン目 : 「'.$ggp_team[$team_no]->teamname.'」チームが'.$msg_array[$phase].'（'.$ggp_cardinfo[$phase][$card_no]['name'].'）。');
 
-            insert_table_ggp_action($token, $earth_no, $team_no, $phase, $ggp_cardinfo[$phase][$card_no]['name'],$ggp_cardinfo[$phase][$card_no]['url'],$ggp_cardinfo[$phase][$card_no]['key'],-$ggp_cardinfo[$phase][$card_no]['money'], 0 ,$ggp_cardinfo[$phase][$card_no]['turn']);
-            insert_db_table_ggp_message($earth_no, $ggp_team[$team_no]->turn.'ターン目 : 「'.$ggp_team[$team_no]->teamname.'」チームが'.$msg_array[$phase].'（'.$ggp_cardinfo[$phase][$card_no]['name'].' '.'二酸化炭素が'.$ggp_cardinfo['reduction'][$tree_card_no]['co2']*$ggp_event_tree_magnification.'kg/ターン減少）。');
-            update_table_ggp_team_transaction($earth_no, $team_no, $ggp_cardinfo[$phase][$card_no]['turn'], $ggp_cardinfo[$phase][$card_no]['money'], 0);
-            update_table_ggp_action_tree($earth_no, $team_no, $ggp_cardinfo['reduction'][$tree_card_no]['co2']*$ggp_event_tree_magnification);
-
-          } else if ($ggp_cardinfo[$phase][$card_no]['key'] == 'buy'){
-            //排出権購入の場合
-            //CO2排出量上限の増強
-            insert_table_ggp_action($token, $earth_no, $team_no, $phase, $ggp_cardinfo[$phase][$card_no]['name'],$ggp_cardinfo[$phase][$card_no]['url'],$ggp_cardinfo[$phase][$card_no]['key'],-$ggp_cardinfo[$phase][$card_no]['money'],0 ,$ggp_cardinfo[$phase][$card_no]['turn']);
-            update_table_ggp_team_transaction($earth_no, $team_no, $ggp_cardinfo[$phase][$card_no]['turn'], $ggp_cardinfo[$phase][$card_no]['money'], 0);
-            insert_db_table_ggp_message($earth_no, $ggp_team[$team_no]->turn.'ターン目 : 「'.$ggp_team[$team_no]->teamname.'」チームが'.$msg_array[$phase].'（'.$ggp_cardinfo[$phase][$card_no]['name'].'）。');
-            update_table_ggp_earth_quota($earth_no, $ggp_quota_co2 + $ggp_cardinfo[$phase][$card_no]['co2']);
-            update_table_ggp_team_co2_quota($earth_no, $team_no, $ggp_team[$team_no]->co2_quota + $ggp_cardinfo[$phase][$card_no]['co2']);
-            $ggp_quota_co2 += $ggp_cardinfo[$phase][$card_no]['co2'];
-            $ggp_team[$team_no]->co2_quota += $ggp_cardinfo[$phase][$card_no]['co2'];
-
+          //【イベント】直売所併設の場合、売り上げUp
+          if($ggp_team[$team_no]->event_valid_direct_store == "1"){
+            insert_table_ggp_message($earth_no, $ggp_team[$team_no]->turn.'ターン目 : 「'.$ggp_team[$team_no]->teamname.'」チームが直売所でおせんべいを売りました。');
+            insert_table_ggp_action($token, $earth_no, $team_no, 'sales' ,$ggp_team[$team_no]->turn, '直売所でおせんべいを売りました','money.png','',$ggp_event_direct_store,0,0,0);
+            update_table_ggp_team_transaction($earth_no, $team_no, 0, -$ggp_event_direct_store, 0);
           }
-        }
-
-        //クリーン電力を使用　イベント発生後、イベント発生状態をリセットする
-        if($phase == 'make' && $ggp_team[$team_no]->event_valid_clean_energy == "1"){
-          update_table_ggp_event_clean_energy($earth_no, $team_no, 0);
-        }
-
-        //直売所併設の場合、売り上げ
-        if($phase == 'make' && $ggp_team[$team_no]->event_valid_direct_store == "1"){
-          insert_db_table_ggp_message($earth_no, $ggp_team[$team_no]->turn.'ターン目 : 「'.$ggp_team[$team_no]->teamname.'」チームが直売所でおせんべいを売りました。');
-          insert_table_ggp_action($token, $earth_no, $team_no, 'event' ,'直売所でおせんべいを売りました','money.png','',$ggp_event_direct_store,0,0);
-          update_table_ggp_team_transaction($earth_no, $team_no, 0, -$ggp_event_direct_store, 0);
+          //クリーン電力を使用　イベント発生後、イベント発生状態をリセットする
+          //ロールバックの関係上、実装しない方針
+          //if($ggp_team[$team_no]->event_valid_clean_energy == "1"){
+          //update_table_ggp_event_clean_energy($earth_no, $team_no, 0);
+          //}
         }
 
         //お店に運ぶフェーズの場合、売り上げを計上
-        if($phase == 'to_store'){
+        else if($phase == 'to_store'){
+          //選んだカードの内容を更新する
+          update_table_ggp_action_rice($earth_no, $team_no, $phase, $ggp_cardinfo[$phase][$card_no]['rice']);
+          insert_table_ggp_action($token, $earth_no, $team_no, $phase, $ggp_team[$team_no]->turn, $ggp_cardinfo[$phase][$card_no]['name'], $ggp_cardinfo[$phase][$card_no]['url'],$ggp_cardinfo[$phase][$card_no]['key'], -$ggp_cardinfo[$phase][$card_no]['money'], $ggp_cardinfo[$phase][$card_no]['co2'],$ggp_cardinfo[$phase][$card_no]['turn'],$ggp_cardinfo[$phase][$card_no]['rice']);
+          update_table_ggp_earth($earth_no, $ggp_earth[0]->co2+$ggp_cardinfo[$phase][$card_no]['co2']);
+          update_table_ggp_team_transaction($earth_no, $team_no, $ggp_cardinfo[$phase][$card_no]['turn'], $ggp_cardinfo[$phase][$card_no]['money'], $ggp_cardinfo[$phase][$card_no]['co2']);
+          insert_table_ggp_message($earth_no, $ggp_team[$team_no]->turn.'ターン目 : 「'.$ggp_team[$team_no]->teamname.'」チームが。'.$msg_array[$phase].'（'.$ggp_cardinfo[$phase][$card_no]['name'].'）。');
+
+
           $magnification = $tree_num * $ggp_event_sales_magnification;
+          //【イベント】人気が出た場合、売り上げアップ
           if($ggp_team[$team_no]->event_valid_popularity == "1"){
             $magnification += $ggp_event_popularity;
             update_table_ggp_event_popularity($earth_no, $team_no,0);
           }
+          //【イベント】虫が入っていて売り上げダウン
           if($ggp_team[$team_no]->event_valid_scandal == "1"){
             $magnification += $ggp_event_scandal;
             update_table_ggp_event_scandal($earth_no, $team_no,0);
@@ -446,10 +454,38 @@ if( !function_exists( 'show_ggp_gameboard_main' ) ):
             $magnification += $count*0.1;
             update_table_ggp_event_protect($earth_no, $team_no,0);
           }
-
           update_table_ggp_team_transaction($earth_no, $team_no, 0, -$ggp_init_sales*(1+$magnification) , 0);
-          insert_table_ggp_action($token, $earth_no, $team_no, 'sales', $msg_array['sales'],"money.png","", $ggp_init_sales*(1+$magnification),0,0);
-          insert_db_table_ggp_message($earth_no, $ggp_team[$team_no]->turn.'ターン目 : 「'.$ggp_team[$team_no]->teamname.'」チームが'.$msg_array['sales'].'。');
+          insert_table_ggp_action($token, $earth_no, $team_no, 'sales', $ggp_team[$team_no]->turn, $msg_array['sales'],"money.png","", $ggp_init_sales*(1+$magnification),0,0,0);
+
+        }
+        // 環境対策のカードを選んだ場合
+        else if($phase == 'reduction') {
+          if($ggp_cardinfo[$phase][$card_no]['key'] == 'tree'){
+            //植樹 カード切ったタイミングではCo2削減は実施しない
+
+            $tree_card_no = 0;
+            // key=treeとなっているカードの番号を探索する
+            for($tree_card_no = 0; $tree_card_no < count($ggp_cardinfo['reduction']); $tree_card_no++){
+              if($ggp_cardinfo['reduction'][$tree_card_no]['key'] == 'tree') break;
+            }
+
+            insert_table_ggp_action($token, $earth_no, $team_no, $phase, $ggp_team[$team_no]->turn, $ggp_cardinfo[$phase][$card_no]['name'],$ggp_cardinfo[$phase][$card_no]['url'],$ggp_cardinfo[$phase][$card_no]['key'],-$ggp_cardinfo[$phase][$card_no]['money'], 0 ,$ggp_cardinfo[$phase][$card_no]['turn'],$ggp_cardinfo['reduction'][$tree_card_no]['co2']*$ggp_event_tree_magnification);
+            insert_table_ggp_message($earth_no, $ggp_team[$team_no]->turn.'ターン目 : 「'.$ggp_team[$team_no]->teamname.'」チームが'.$msg_array[$phase].'（'.$ggp_cardinfo[$phase][$card_no]['name'].' '.'二酸化炭素が'.$ggp_cardinfo['reduction'][$tree_card_no]['co2']*$ggp_event_tree_magnification.'kg/ターン減少）。');
+            update_table_ggp_team_transaction($earth_no, $team_no, $ggp_cardinfo[$phase][$card_no]['turn'], $ggp_cardinfo[$phase][$card_no]['money'], 0);
+            update_table_ggp_action_tree($earth_no, $team_no, $ggp_cardinfo['reduction'][$tree_card_no]['co2']*$ggp_event_tree_magnification);
+
+          } else if ($ggp_cardinfo[$phase][$card_no]['key'] == 'buy'){
+            //排出権購入の場合
+            //CO2排出量上限の増強
+            insert_table_ggp_action($token, $earth_no, $team_no, $phase, $ggp_team[$team_no]->turn, $ggp_cardinfo[$phase][$card_no]['name'],$ggp_cardinfo[$phase][$card_no]['url'],$ggp_cardinfo[$phase][$card_no]['key'],-$ggp_cardinfo[$phase][$card_no]['money'],0 ,$ggp_cardinfo[$phase][$card_no]['turn'],$ggp_cardinfo[$phase][$card_no]['co2']);
+            update_table_ggp_team_transaction($earth_no, $team_no, $ggp_cardinfo[$phase][$card_no]['turn'], $ggp_cardinfo[$phase][$card_no]['money'], 0);
+            insert_table_ggp_message($earth_no, $ggp_team[$team_no]->turn.'ターン目 : 「'.$ggp_team[$team_no]->teamname.'」チームが'.$msg_array[$phase].'（'.$ggp_cardinfo[$phase][$card_no]['name'].'）。');
+            update_table_ggp_earth_quota($earth_no, $ggp_quota_co2 + $ggp_cardinfo[$phase][$card_no]['co2']);
+            update_table_ggp_team_co2_quota($earth_no, $team_no, $ggp_team[$team_no]->co2_quota + $ggp_cardinfo[$phase][$card_no]['co2']);
+            $ggp_quota_co2 += $ggp_cardinfo[$phase][$card_no]['co2'];
+            $ggp_team[$team_no]->co2_quota += $ggp_cardinfo[$phase][$card_no]['co2'];
+
+          }
         }
 
         //毎ターンずつ植樹によりCo2排出量を削減する
@@ -460,7 +496,7 @@ if( !function_exists( 'show_ggp_gameboard_main' ) ):
           for($tree_card_no = 0; $tree_card_no < count($ggp_cardinfo['reduction']); $tree_card_no++){
             if($ggp_cardinfo['reduction'][$tree_card_no]['key'] == 'tree') break;
           }
-          insert_table_ggp_action($token, $earth_no, $team_no, "reduction",$msg_array['tree'], "tree_reduction_co2.png","", 0, $reduction_quantity_tree,0);
+          insert_table_ggp_action($token, $earth_no, $team_no, "reduction",$ggp_team[$team_no]->turn, $msg_array['tree'], "tree_reduction_co2.png","", 0, $reduction_quantity_tree,0,0);
           update_table_ggp_earth($earth_no, $ggp_earth[0]->co2+$reduction_quantity_tree);
           update_table_ggp_team_transaction($earth_no, $team_no, 0, 0, $reduction_quantity_tree);
         }
@@ -486,22 +522,23 @@ if( !function_exists( 'show_ggp_gameboard_main' ) ):
     if(check_event_arise($earth_no, 1) != ""){
       if($ggp_earth[0]->event_valid_tree == 0){
         update_table_ggp_earth_event_tree($earth_no);
+          insert_table_ggp_message($earth_no,'【イベント】「木を植える」カードの効果が'.(double)get_option('ggp_event_tree_magnification').'倍になりました。');
       }
     }
 
     if(check_event_arise($earth_no, 2) != ""){
       if($ggp_earth[0]->event_valid_sales == 0){
         update_table_ggp_earth_event_sales($earth_no);
+        insert_table_ggp_message($earth_no,'【イベント】売り上げが木を植えた回数&#x2613;' .(100*(double)get_option('ggp_event_sales_magnification')) .'％アップになりました。');
       }
     }
 
     //イベントを実施するターンの場合ポップアップを表示する
     $card_turn = get_table_ggp_earth_event_card_turn($earth_no);
-    //error_log('turn = '. $ggp_team[$team_no]->turn . ' db = ' . $card_turn[0]->event_card_turn);
     for( $i = 0; $i < count($ggp_team); $i++){
       if($i == count($ggp_team) - 1 && $card_turn[0]->event_card_turn != $ggp_team[$team_no]->turn){
         update_table_ggp_earth_event_card_turn($earth_no, $ggp_team[$i]->turn);
-        insert_db_table_ggp_message($earth_no, '【イベント発生】イベントのカードを1枚選んでください。');
+        insert_table_ggp_message($earth_no, '【イベント発生】ファシリテータはイベントのカードを1枚選んでください。');
         break;
       }
       if($ggp_team[$i]->turn == ($event_arise_turn[0]+1) && $ggp_team[$i]->turn == $ggp_team[$i + 1]->turn){
@@ -560,31 +597,26 @@ if( !function_exists( 'show_ggp_gameboard_main' ) ):
       <?php echo $ggp_team[$team_no]->teamname ?>
       </div>
       <div class="team-name">
-      <form method="post" action="">
-      <input type="hidden" name="is_general" value="<?php echo $is_general; ?>">
-      <input type="hidden" name="earth_no" value="<?php echo $earth_no; ?>">
-      <input type="hidden" name="team_no" value="<?php echo $team_no; ?>">
-      <input type="hidden" name="mode" value="select_boardgame">
-      <input type="submit" class="fas btn-reload" value="&#xf2f1 更新">
-      </form>
+        <form method="post" action="">
+          <input type="hidden" name="is_general" value="<?php echo $is_general; ?>">
+          <input type="hidden" name="earth_no" value="<?php echo $earth_no; ?>">
+          <input type="hidden" name="team_no" value="<?php echo $team_no; ?>">
+          <input type="hidden" name="mode" value="select_boardgame">
+          <input type="submit" class="fas btn-reload" value="&#xf2f1 更新">
+        </form>
       </div>
 
-      <div class="team-name">
-      <?php if($is_general == 'disabled'){ ?>
-        <span style="font-size:0.5em; color:red;">【参照のみ】カードをえらぶことはできません</span>
-          <?php ; }?>
-          </div>
-          <div class="return">
-          <form method="post" action="">
+      <div class="return">
+        <form method="post" action="">
           <input type="hidden" name="is_general" value="<?php echo $is_general; ?>">
           <input type="hidden" name="earth_no" value="<?php echo $earth_no; ?>">
           <input type="hidden" name="mode" value="select_team">
           <input type="submit" class="btn-return" value="戻る">
-          </form>
-          </div>
-          <div class="return">
-          <p style="width:20px;"></p>
-          </div>
+        </form>
+      </div>
+      <div class="return">
+        <p style="width:20px;"></p>
+      </div>
           <?php if($is_general == 'enabled'){
                   if($ggp_quota_turn < $ggp_team[$team_no]->turn){
           ?>
@@ -598,13 +630,7 @@ if( !function_exists( 'show_ggp_gameboard_main' ) ):
           </div>
           <?php }else{ ?>
           <div class="return">
-            <form method="post" action="">
-            <input type="hidden" name="is_general" value="<?php echo $is_general; ?>">
-            <input type="hidden" name="earth_no" value="<?php echo $earth_no; ?>">
-            <input type="hidden" name="team_no" value="<?php echo $team_no; ?>">
-            <input type="hidden" name="mode" value="select_event">
-            <input type="submit" class="btn-return" value="イベント">
-            </form>
+
           </div>
           <?php } ?>
           <div class="return">
@@ -622,6 +648,9 @@ if( !function_exists( 'show_ggp_gameboard_main' ) ):
               <input type="hidden" name="team_no" value="<?php echo $team_no; ?>">
             </form>
           </div>
+        </div>
+        <div class="header-div">
+          <font style="font-size: 0.8em;">目標：<?=$team_objective ?></font>
         </div>
         <div class="header-div">
         <!--ほかのチームの情報 -->
@@ -784,7 +813,9 @@ if( !function_exists( 'show_ggp_gameboard_main' ) ):
 
       <div class="card_area" id="card_area_to_store">
         <p class="card_text"><?=$phase_name['to_store'] ?>&nbsp;&nbsp;<font size="2em">( <i class="fas fa-coins"></i>お金 <?=$ggp_team[$team_no]->money ?>万円 <i class="fas fa-skull-crossbones"></i>二酸化炭素 <?=$ggp_team[$team_no]->co2 ?>kg/<?=$ggp_team[$team_no]->co2_quota ?>kg）</font></p>
+        <div id="event_sales_msg_area">
         <?php if($ggp_event_valid_sales == "1"){ ?><p class="card_text" style="color:red;"><?=$event_sales_msg_in_card ?></p><?php }; ?>
+        </div>
         <?php if($after_make_quantity <= 0){ ;?><p class="card_text_err"><i class="fas fa-ban"></i>おせんべいを作らないとこのカードはえらべません</p> <?php  };?>
           <a class="close-btn" onclick="OnClick_to_store()" style="color:black;"><i class="fas fa-times" ></i></a>
           <?php for($i = 0; $i < count($ggp_cardinfo['to_store']); $i++){
@@ -802,9 +833,10 @@ if( !function_exists( 'show_ggp_gameboard_main' ) ):
                 <div class="icon"><img src="/wp-content/uploads/<?=$ggp_cardinfo['to_store'][$i]['url'] ?>"></div>
                 <p class="card_text"><?=$ggp_cardinfo['to_store'][$i]['name']; ?></p>
                 <p class="card_text"><?=$ggp_cardinfo['to_store'][$i]['description'] ?></p>
-                <p class="card_text"><i class="fas fa-coins"></i>&nbsp;必要なお金<br>&nbsp;<?=$ggp_cardinfo['to_store'][$i]['rice'] ?>トンの米　<?=$ggp_cardinfo['to_store'][$i]['money'] ?>万円</p>
+                <p class="card_text"><i class="fas fa-coins"></i>&nbsp;必要なお金<br><?=$ggp_cardinfo['to_store'][$i]['money'] ?>万円</p>
                 <p class="card_text"><i class="fas fa-heart"></i>&nbsp;必要なターン数<br>&nbsp;<?=$ggp_cardinfo['to_store'][$i]['turn'] ?>ターン</p>
                 <p class="card_text"><i class="fas fa-skull-crossbones"></i>&nbsp;二酸化炭素ガス<br>&nbsp;<?=$ggp_cardinfo['to_store'][$i]['co2'] ?>kg</p>
+                <p class="card_text"><i class="fas fa-coins"></i>&nbsp;売り上げ<br>&nbsp;<?=$ggp_init_sales*(1+$ggp_event_sales_magnification * $tree_num) ?>万円</p>
                 <div style="text-align:center;">
                   <input class="btn-select-card" type="submit" value="<?php echo($is_btn_valid['to_store'][$i]['is_valid'] == 'disabled' ? 'えらべません' :'えらぶ'); ?>" <?=$is_btn_valid['to_store'][$i]['is_valid'] ?>>
                 </div>
@@ -815,7 +847,9 @@ if( !function_exists( 'show_ggp_gameboard_main' ) ):
 
       <div class="card_area" id="card_area_reduction">
       <p class="card_text"><?=$phase_name['reduction'] ?>&nbsp;&nbsp;<font size="2em">( <i class="fas fa-coins"></i>お金 <?=$ggp_team[$team_no]->money ?>万円 <i class="fas fa-skull-crossbones"></i>二酸化炭素 <?=$ggp_team[$team_no]->co2 ?>kg/<?=$ggp_team[$team_no]->co2_quota ?>kg）</font></p>
+        <div id="event_tree_msg_area">
         <?php if($ggp_event_valid_tree == "1"){ ?><p class="card_text" style="color:red;"><?=$event_tree_msg_in_card ?></p><?php }; ?>
+        </div>
           <a class="close-btn" onclick="OnClick_reduction()" style="color:black;"><i class="fas fa-times" ></i></a>
           <?php for($i = 0; $i < count($ggp_cardinfo['reduction']); $i++){
           if($ggp_cardinfo['reduction'][$i]['is_visible'] == NULL) continue; ?>
@@ -847,7 +881,20 @@ if( !function_exists( 'show_ggp_gameboard_main' ) ):
       <?php } ?>
       </div>
 
-
+    <!-- *************チームの目標******* -->
+    <p class="subtitle">チームの目標</p>
+    <form method="post" action="">
+    <table class="team-objective">
+      <input type="hidden" name="is_general" value="<?php echo $is_general; ?>">
+      <input type="hidden" name="earth_no" value="<?php echo $earth_no; ?>">
+      <input type="hidden" name="team_no" value="<?php echo $team_no; ?>">
+      <input type="hidden" name="mode" value="select_boardgame">
+      <tr>
+      <td><input type="text" class="team-objective" name="team_objective" id="team_objective" placeholder="チームの目標を入力してください" value="<?=$team_objective ?>"></td>
+      <td><input type="submit" class="btn-submit-team-objective" value="送信"></td>
+      </tr>
+      </table>
+    </form>
 
       <!-- ***********行動記録*********** -->
       <p class="subtitle">行動</p>
@@ -1155,7 +1202,7 @@ function check_ggp_event_tree_ajax() {
     },
     success: function( response ) {
       if(document.getElementById('is_event_valid_tree').value == "0" && response == "1"){
-        add_popup_msg_wait("<?=$event_tree_msg ?>");
+        document.getElementById("event_tree_msg_area").innerHTML = '<p class="card_text" style="color:red;"><?=$event_tree_msg_in_card ?></p>';
         document.getElementById('is_event_valid_tree').value = response;
       }else if(document.getElementById('is_event_valid_tree').value == "1" && response == "0"){
         add_popup_msg_wait("<?=$event_cancel_msg ?>");
@@ -1179,7 +1226,7 @@ function check_ggp_event_sales_ajax() {
     },
     success: function( response ) {
       if(document.getElementById('is_event_valid_sales').value == "0" && response == "1"){
-        add_popup_msg_wait("<?=$event_sales_msg ?>");
+        document.getElementById("event_sales_msg_area").innerHTML = '<p class="card_text" style="color:red;"><?=$event_sales_msg_in_card ?></p>';
         document.getElementById('is_event_valid_sales').value = response;
       }else if(document.getElementById('is_event_valid_sales').value == "1" && response == "0"){
         add_popup_msg_wait("<?=$event_cancel_msg ?>");
@@ -1316,19 +1363,16 @@ function reSet()
 function add_popup_msg(message, id = ""){
   // ツールチップの class="invisible" を削除
   document.getElementById("popup_msg_area").style.display = "block";
-  document.getElementById('popup_msg_area').innerHTML += '<div class="popup_msg">' + message + '</div>';
+  document.getElementById('popup_msg_area').innerHTML += '<div class="popup_msg"><a class="close-btn-popup" style="color:white;"><i class="fas fa-times"></i></a> ' + message + '</div>';
   if(id > 0){
     document.getElementById('popup_msg_latest_id').value = id;
   }
-
   // 表示されたツールチップを隠す処理（ツールチップ領域以外をマウスクリックで隠す）
-  $('html').mousedown(function(event){
+  $('.close-btn-popup').on('click',function(){
+
       // イベント発生源である要素を取得（クリックされた要素を取得）
-      var clickedElement = event.target;
-      // どの要素をクリックしても非表示とする
-      document.getElementById('popup_msg_area').style.display ="none";
-      document.getElementById('popup_msg_area').innerHTML = "";
-      });
+      $(this).parent().remove();
+  });
 }
 
 

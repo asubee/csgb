@@ -51,14 +51,20 @@ table.team_info tr:nth-of-type(2n+1) {
   background-color: transparent !important;
 }
 
-table.vote {
+.vote {
   width: 100%;
   max-width:1200px;
   background-color: #FFFFFF !important;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  flex-wrap: wrap;
 }
 
-table.vote tr, td {
- background-color: #FFFFFF !important;
+.vote-submit {
+  text-align: center;
+  margin: 5px;
+  min-width: 15%;
 }
 
 input.btn-select-team {
@@ -141,6 +147,7 @@ input.btn-select-event-selected:disabled {
 
 .header-div {
   overflow: hidden;
+  margin: 0px;
 }
 
 .earth-info {
@@ -152,7 +159,38 @@ input.btn-select-event-selected:disabled {
 
 .team-name {
   font-size:1.8em;
+  line-height: 1.0em;
   float: left;
+}
+
+.header-message {
+  font-size: 1.0em;
+  max-width: 500px;
+  float: left;
+}
+
+input.team-objective {
+  font-size:1.0em;
+  padding: 0.3em 0.3em;
+  width: 100%;
+}
+
+table.team-objective {
+  background-color: #ffffff;
+  max-width: 800px;
+}
+
+table.team-objective tr {
+  background-color: #ffffff !important;
+}
+
+input.btn-submit-team-objective {
+  min-width: 70px;
+  max-width: 100px;
+  color: #fff;
+  background-color: #004831;
+  font-size: 0.8em;
+  padding: 0.3em 2.0em;
 }
 
 .team-description {
@@ -189,7 +227,7 @@ p.subtitle {
   border: 1px solid #CCCCCC;
   float: left;
   width: 350px;
-  height: 300px;
+  height: 350px;
   padding: 1.0em;
   margin: 0.5em 1.0em;
 }
@@ -263,6 +301,17 @@ p.p-ggp-msg {
   cursor: pointer;
 }
 
+.close-btn-popup {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 50px;
+  height: 50px;
+  line-height: 50px;
+  text-align: center;
+  cursor: pointer;
+}
+
 .icon {
   position:absolute;
   right: 5px;
@@ -293,6 +342,7 @@ input.btn-timer {
 }
 
 div.popup_msg{
+ position: relative;
  z-index: 20;
  margin: 5px 0px;
  padding: 10px;
@@ -311,6 +361,7 @@ div.popup_msg_area {
  top: 50px;
  position: absolute;
  left: 50%;
+ z-index: 3;
  transform: translateX(-50%);
  -webkit-transform: translateX(-50%);
  -ms-transform: translateX(-50%);
@@ -334,6 +385,11 @@ div.result_canvas_single_column {
   padding: 20px;
   height: 500px;
   width: 100%;
+}
+
+table.ggp_action_table {
+  border: 1px solid #EEEEEE;
+  font-size: 0.7em;
 }
 
 
@@ -384,7 +440,7 @@ div.result_canvas_single_column {
   border: 1px solid #CCCCCC;
   float: left;
   width: 90%;
-  height: 300px;
+  height: 350px;
   padding: 1.0em;
   margin: 0.5em 1.0em;
 }
@@ -410,7 +466,7 @@ table.card_image td{
   border-top: 30px solid #004831;
 }
 
-
+}
 
 
 /*480px以下*/

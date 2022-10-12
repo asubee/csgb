@@ -237,8 +237,9 @@ endif;
 *
 * <<テーブル情報>>
 * *地球番号             earth_no                  int         チームを表す通し番号
-* *チーム番号           team_no                   int         チーム名
+* *チーム番号           team_no                   int         チーム番号
 * チーム名              teamname                  varchar(50) チーム名
+* チームの目標          team_objective            varchar(50) チームの目標
 * 現在のターン          turn                      int         初期値は1
 * お金                  money                     int
 * Co2排出量             co2                       int
@@ -259,11 +260,13 @@ function create_table_ggp_team() {
           earth_no int NOT NULL,
           team_no int NOT NULL,
           teamname varchar(50),
+          team_objective varchar(50),
           turn int,
           money int,
           co2 int,
           co2_quota int,
           event_valid_clean_energy int,
+          event_valid_restriction_gascars int,
           event_valid_direct_store int,
           event_valid_popularity int,
           event_valid_scandal int,
@@ -295,10 +298,12 @@ function reset_table_ggp_team(){
       'team_no' => $j,
       'turn' => 1,
       'teamname' => $i ."-" . $j . "チーム",
+      'team_objective' => "",
       'money' => $ggp_init_money,
       'co2' => 0,
       'co2_quota' => $ggp_init_quota_co2_perteam,
       'event_valid_clean_energy' => 0,
+      'event_valid_restriction_gascars' => 0,
       'event_valid_direct_store' => 0,
       'event_valid_popularity' => 0,
       'event_valid_scandal' => 0,
@@ -311,6 +316,9 @@ function reset_table_ggp_team(){
       '%d',
       '%d',
       '%s',
+      '%s',
+      '%d',
+      '%d',
       '%d',
       '%d',
       '%d',
@@ -345,6 +353,7 @@ function reset_table_ggp_team_transaction(){
       'co2' => 0,
       'co2_quota' => $ggp_init_quota_co2_perteam,
       'event_valid_clean_energy' => 0,
+      'event_valid_restriction_gascars' => 0,
       'event_valid_direct_store' => 0,
       'event_valid_popularity' => 0,
       'event_valid_scandal' => 0,
@@ -358,6 +367,7 @@ function reset_table_ggp_team_transaction(){
     );
 
     $format = array(
+      '%d',
       '%d',
       '%d',
       '%d',
@@ -511,6 +521,25 @@ function is_ggp_event_clean_energy($earth_no, $team_no){
 }
 endif;
 
+if(! function_exists( 'is_ggp_event_restriction_gascars' ) ):
+function is_ggp_event_restriction_gascars($earth_no, $team_no){
+  $table = TABLE_NAME_GGP_TEAM;
+  global $wpdb;
+  $where = $wpdb->prepare(' WHERE earth_no LIKE %s AND team_no LIKE %s', $earth_no, $team_no);
+  $query = "SELECT event_valid_restriction_gascars FROM {$table}". $where;
+  $records = $wpdb->get_results( $query );
+
+  if($records[0]->event_valid_restriction_gascars == "1"){
+    return true;
+  }else{
+    return false;
+  }
+  return false;
+}
+endif;
+
+
+
 if(! function_exists( 'update_table_ggp_event_direct_store') ):
 function update_table_ggp_event_direct_store($earth_no, $team_no, $value){
   $table = TABLE_NAME_GGP_TEAM;
@@ -591,6 +620,27 @@ function update_table_ggp_event_protect($earth_no, $team_no, $value){
 }
 endif;
 
+if(! function_exists( 'update_table_ggp_event_restriction_gascars') ):
+function update_table_ggp_event_restriction_gascars($earth_no, $team_no, $value){
+  $table = TABLE_NAME_GGP_TEAM;
+  $data = array('event_valid_restriction_gascars' => $value);
+  $where = array(
+            'earth_no' => $earth_no,
+            'team_no' => $team_no
+            );
+  $format = array(
+            '%d'
+            );
+  $where_format = array(
+            '%d',
+            '%d'
+            );
+  return update_db_table_record($table, $data, $where, $format, $where_format);
+
+}
+endif;
+
+
 if(! function_exists( 'update_table_ggp_team_vote' ) ):
 function update_table_ggp_team_vote($earth_no, $team_no){
   $table = TABLE_NAME_GGP_TEAM;
@@ -616,6 +666,28 @@ function update_table_ggp_team_vote($earth_no, $team_no){
 
 }
 endif;
+
+if(! function_exists( 'update_table_ggp_team_objective' ) ):
+function update_table_ggp_team_objective($earth_no, $team_no, $team_objective){
+  $table = TABLE_NAME_GGP_TEAM;
+  $data  = array('team_objective' => $team_objective);
+  $where = array(
+            'earth_no' => $earth_no,
+            'team_no' => $team_no
+            );
+  $format = array(
+            '%s'
+            );
+  $where_format = array(
+            '%d',
+            '%d'
+            );
+
+  return update_db_table_record($table, $data, $where, $format, $where_format);
+
+}
+endif;
+
 
 /****************************************************************
 * テーブル名：wp_ggp_action
@@ -652,7 +724,8 @@ function create_table_ggp_action() {
           keyword varchar(50),
           money int,
           co2 int,
-          require_turn int
+          require_turn int,
+          quantity int
           );";
   $res = create_db_table($sql);
   return $res;
@@ -668,21 +741,21 @@ function reset_table_ggp_action(){
 endif;
 
 if( !function_exists( 'insert_table_ggp_action' ) ):
-function insert_table_ggp_action($token, $earth_no, $team_no, $phase, $cardname, $url, $key, $money, $co2, $require_turn ){
+function insert_table_ggp_action($token, $earth_no, $team_no, $phase, $turn, $cardname, $url, $key, $money, $co2, $require_turn, $quantity){
   $table = TABLE_NAME_GGP_ACTION;
-  $ggp_team = get_db_table_records_ggp(TABLE_NAME_GGP_TEAM,"earth_no",$earth_no);
   $data = array(
           'token' => $token,
           'earth_no' => $earth_no,
           'team_no' => $team_no,
           'phase' => $phase,
-          'turn' => $ggp_team[$team_no]->turn,
+          'turn' => $turn,
           'cardname' => $cardname,
           'url' => $url,
           'keyword' => $key,
           'money' => $money,
           'co2' => $co2,
-          'require_turn' => $require_turn
+          'require_turn' => $require_turn,
+          'quantity' => $quantity
           );
   $format = array(
             '%s',
@@ -696,9 +769,20 @@ function insert_table_ggp_action($token, $earth_no, $team_no, $phase, $cardname,
             '%d',
             '%d',
             '%d',
+            '%d',
           );
   return insert_db_table_record($table, $data, $format);
 
+}
+endif;
+
+if( !function_exists( 'delete_table_ggp_action_rollback' ) ):
+function delete_table_ggp_action_rollback($earth_no, $team_no, $turn){
+  global $wpdb;
+  $table = TABLE_NAME_GGP_ACTION;
+  $query = $wpdb->prepare('UPDATE '. $table . ' SET phase = "system", turn = "0", cardname = "操作を取り消しました。", url = "rollback.png", keyword = "", money = 0, co2 = 0, require_turn = 0, quantity = 0 WHERE earth_no = %d AND team_no = %d AND turn = %d',$earth_no, $team_no, $turn);
+  $result = $wpdb->get_results($query);
+  return $result;
 }
 endif;
 
@@ -718,6 +802,24 @@ function get_db_table_ggp_action($earth_no, $team_no){
   return $records;
 }
 endif;
+
+//テーブルからレコードの取得
+if ( !function_exists( 'get_db_table_ggp_action_turn' ) ):
+function get_db_table_ggp_action_turn($earth_no, $team_no, $turn){
+  $table = TABLE_NAME_GGP_ACTION;
+  global $wpdb;
+  $where = $wpdb->prepare(' WHERE earth_no LIKE %s AND team_no LIKE %s AND turn LIKE %s', $earth_no, $team_no, $turn);
+  $query = "SELECT * FROM {$table}".
+              $where.
+              "ORDER BY id DESC";
+
+  $records = $wpdb->get_results( $query );
+  //_v($query);
+
+  return $records;
+}
+endif;
+
 
 if( !function_exists( ' allow_insert_table_ggp_action ') ):
 function allow_insert_table_ggp_action($token){
@@ -757,6 +859,8 @@ function get_table_action_latest_id($earth_no, $team_no){
 }
 endif;
 
+// 同じチームの画面を複数人が開いていた場合、古い画面でボタンを押されたときにFalseとなるようにする
+// 前のチームを追い越してActionを起こしたときにFalseとなるようにする
 if( !function_exists( 'check_allow_transaction' ) ):
 function check_allow_transaction($earth_no, $team_no, $id){
   $latest_id = get_table_action_latest_id($earth_no, $team_no);
@@ -766,6 +870,22 @@ function check_allow_transaction($earth_no, $team_no, $id){
     return true;
   }
 
+  return false;
+}
+endif;
+
+// 前のチームを追い越してActionを起こしたときにFalseとなるようにする
+if( !function_exists( 'check_allow_transaction_sequence' ) ):
+function check_allow_transaction_sequence($earth_no, $team_no){
+  $ggp_init_perteam = get_option('ggp_init_perteam');
+  $ggp_team = get_db_table_records_ggp(TABLE_NAME_GGP_TEAM,"earth_no",$earth_no);
+  if($team_no > 0 && $ggp_team[$team_no - 1]->turn > $ggp_team[$team_no]->turn){
+    return true;
+  }else if($team_no == 0 && $ggp_team[$ggp_init_perteam - 1]->turn >= $ggp_team[$team_no]->turn){
+    return true;
+  }else{
+    return false;
+  }
   return false;
 }
 endif;
@@ -903,8 +1023,8 @@ function reset_table_ggp_message(){
 }
 endif;
 
-if( !function_exists(' insert_db_table_ggp_message' ) ):
-function insert_db_table_ggp_message($earth_no, $msg){
+if( !function_exists(' insert_table_ggp_message' ) ):
+function insert_table_ggp_message($earth_no, $msg){
   $table = TABLE_NAME_GGP_MESSAGE;
   $data = array('earth_no'=>$earth_no,
                 'msg'=>$msg
@@ -1016,8 +1136,8 @@ function get_db_table_ggp_action_rice($earth_no, $team_no){
 }
 endif;
 
-if ( !function_exists( 'update_db_table_ggp_action_rice' ) ):
-function update_db_table_ggp_action_rice($earth_no, $team_no, $phase, $quantity){
+if ( !function_exists( 'update_table_ggp_action_rice' ) ):
+function update_table_ggp_action_rice($earth_no, $team_no, $phase, $quantity){
   if($phase == 'reduction') return;
 
   $table = TABLE_NAME_GGP_ACTION_RICE;

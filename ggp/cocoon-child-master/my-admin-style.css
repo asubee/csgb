@@ -47,11 +47,10 @@ table.ggp_earth_table {
 }
 
 table.action_table {
-  width: 60%;
+  width: 100%;
   text-align: center;
   border: 1px solid #CCCCCC;
   border-collapse: collapse;
-  /* font-size: 1.0em; */
   background-color: #F9F9F9;
 }
 

@@ -15,10 +15,12 @@ function ggp_setup(){
   add_submenu_page('ggp_setup','ゲーム設定','ゲーム設定','manage_options','ggp_game_setup','add_ggp_game_setup',1);
   add_submenu_page('ggp_setup','チーム設定','チーム設定','manage_options','ggp_team_setup','add_ggp_team_setup',2);
   add_submenu_page('ggp_setup','状況監視','状況監視','manage_options','ggp_game_watch','add_ggp_game_watch',3);
+  add_submenu_page('ggp_setup','ロールバック','ロールバック','manage_options','ggp_rollback','add_ggp_rollback',4);
   remove_submenu_page('ggp_setup','ggp_setup');
   add_action('admin_init','register_ggp_game_setup');
   add_action('admin_init','register_ggp_team_setup');
   add_action('admin_init','register_ggp_game_watch');
+  add_action('admin_init','register_ggp_rollback');
 
 }
 
@@ -42,10 +44,13 @@ function register_ggp_game_setup(){
   register_setting('ggp_game_setup_group','ggp_cardinfo');
   register_setting('ggp_game_setup_group','ggp_cardcount');
   register_setting('ggp_game_setup_group','ggp_reduction_valid');
+  register_setting('ggp_game_setup_group','ggp_phase_name');
+  register_setting('ggp_game_setup_group','ggp_msg_array');
   register_setting('ggp_game_setup_group','ggp_event_tree');
   register_setting('ggp_game_setup_group','ggp_event_tree_magnification');
   register_setting('ggp_game_setup_group','ggp_event_sales');
   register_setting('ggp_game_setup_group','ggp_event_sales_magnification');
+  register_setting('ggp_game_setup_group','ggp_event_arise_turn');
   register_setting('ggp_game_setup_group','ggp_event_not_clean_energy');
   register_setting('ggp_game_setup_group','ggp_event_emission_trading');
   register_setting('ggp_game_setup_group','ggp_event_reduction_quota_co2');
@@ -55,6 +60,7 @@ function register_ggp_game_setup(){
   register_setting('ggp_game_setup_group','ggp_event_popularity');
   register_setting('ggp_game_setup_group','ggp_event_scandal');
   register_setting('ggp_game_setup_group','ggp_event_protect_environment_action');
+  register_setting('ggp_game_setup_group','ggp_event_restriction_gascars');
 
 }
 
@@ -62,6 +68,8 @@ function add_ggp_game_setup(){
 
 $ggp_cardinfo = get_option('ggp_cardinfo');
 $ggp_cardcount = get_option('ggp_cardcount');
+$ggp_phase_name = get_option('ggp_phase_name');
+$ggp_msg_array = get_option('ggp_msg_array');
 $ggp_reduction_valid = get_option('ggp_reduction_valid');
 $ggp_event_tree = get_option('ggp_event_tree');
 $ggp_event_sales = get_option('ggp_event_sales');
@@ -72,11 +80,13 @@ $ggp_event_reduction_quota_co2 = get_option('ggp_event_reduction_quota_co2');
 $ggp_init_co2_gameover = get_option('ggp_init_co2_gameover');
 $ggp_event_tree_magnification = "2";
 $ggp_event_sales_magnification = "0.1";
-$ggp_event_not_clean_energy = get_option("ggp_event_not_clean_energy");
+$ggp_event_arise_turn = get_option('ggp_event_arise_turn');
+$ggp_event_not_clean_energy = get_option('ggp_event_not_clean_energy');
 $ggp_event_direct_store = get_option('ggp_event_direct_store');
 $ggp_event_popularity = get_option('ggp_event_popularity');
 $ggp_event_scandal = get_option('ggp_event_scandal');
 $ggp_event_protect_environment_action = get_option('ggp_event_protect_environment_action');
+$ggp_event_restriction_gascars = get_option('ggp_event_restriction_gascars');
 
 if(!is_array($ggp_event_protect_environment_action)){
   $ggp_event_protect_environment_action = array_fill(0, 5, "");
@@ -84,6 +94,22 @@ if(!is_array($ggp_event_protect_environment_action)){
 
 if(!is_array($ggp_event_not_clean_energy)){
   $ggp_event_not_clean_energy =array_fill(0, 5, "");
+}
+
+if(!is_array($ggp_event_restriction_gascars)){
+  $ggp_event_restriction_gascars =array_fill(0, 5, "");
+}
+
+if(!is_array($ggp_phase_name)){
+  $ggp_phase_name =Array('grow'=>'','to_factory'=>'', 'make'=>'', 'to_store'=>'', 'reduction'=>'', 'sales'=>'', 'event'=>'');
+}
+
+if(!is_array($ggp_msg_array)){
+  $ggp_msg_array =Array('grow'=>'','to_factory'=>'', 'make'=>'', 'to_store'=>'', 'reduction'=>'', 'tree'=>'','sales'=>'', 'direct_store'=>'');
+}
+
+if(!is_array($ggp_event_arise_turn)){
+  $ggp_event_arise_turn = array_fill(0, 3, "");
 }
 
 if(!is_array($ggp_cardinfo)){
@@ -146,6 +172,10 @@ for($tree_card_no = 0; $tree_card_no < count($ggp_cardinfo['reduction']); $tree_
             <input type="hidden" id="ggp_event_sales_magnification" name="ggp_event_sales_magnification" value=<?=$ggp_event_sales_magnification ?>>
           <h4>ルーレットイベント</h4>
           <table>
+          <tr><td></td><td>イベント発生ターン</td><td>
+          <?php for($i = 0; $i < count($ggp_event_arise_turn); $i++){
+          ?><input type="text" id="ggp_event_arise_turn[<?=$i ?>]" name="ggp_event_arise_turn[<?=$i ?>]" value="<?=$ggp_event_arise_turn[$i] ?>">
+          <?php } ?></td>
           <tr><td>(1)</td><td>台風で田んぼと工場がやられる</td><td>(設定値なし)</td></tr>
           <tr><td>(2)</td><td>電気自動車を使った会社に補助金</td><td><input type="text" id="ggp_event_subsidy" name="ggp_event_subsidy" value="<?=$ggp_event_subsidy ?>">万円／電気自動車を使った回数</td></tr>
           <tr><td>(3)</td><td>ガソリン車を使った会社に税金</td><td><input type="text" id="ggp_event_tax" name="ggp_event_tax" value="<?=$ggp_event_tax ?>">万円／ガソリン車を使った回数</td></tr>
@@ -164,6 +194,12 @@ for($tree_card_no = 0; $tree_card_no < count($ggp_cardinfo['reduction']); $tree_
           <td>
           <?php for($i = 0; $i < count($ggp_event_protect_environment_action); $i++){ ?>
           <input type="text" id="ggp_event_protect_environment_action[<?=$i ?>]" name="ggp_event_protect_environment_action[<?=$i ?>]" value="<?=$ggp_event_protect_environment_action[$i]; ?>">
+          <? } ?>
+          </td></tr>
+          <tr><td>(11)</td><td>ガソリン車禁止<br>選択不可とするガソリン車のキー値</td>
+          <td>
+          <?php for($i = 0; $i < count($ggp_event_restriction_gascars); $i++){ ?>
+          <input type="text" id="ggp_event_restriction_gascars[<?=$i ?>]" name="ggp_event_restriction_gascars[<?=$i ?>]" value="<?=$ggp_event_restriction_gascars[$i]; ?>">
           <? } ?>
           </td></tr>
           </table>
@@ -278,6 +314,31 @@ for($tree_card_no = 0; $tree_card_no < count($ggp_cardinfo['reduction']); $tree_
           <td style="text-align:center;"><input type="checkbox" id="ggp_cardinfo[reduction][<?php echo $i; ?>][is_visible]" name="ggp_cardinfo[reduction][<?php echo $i; ?>][is_visible]" value="1" <?php checked(1, $ggp_cardinfo['reduction'][$i]['is_visible']); ?>"></td>
           <td style="text-align:center;"><input type="checkbox" id="ggp_cardinfo[reduction][<?php echo $i; ?>][is_valid]" name="ggp_cardinfo[reduction][<?php echo $i; ?>][is_valid]" value="1" <?php checked(1, $ggp_cardinfo['reduction'][$i]['is_valid']); ?>"></td>
           </tr>
+          <?php } ?>
+          </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="metabox-holder">
+      <div class="postbox">
+        <h3 class="hndle"><span>表示メッセージ設定</span></h3>
+        <div class="inside">
+          <div class="main">
+          <h4>各フェーズの表示文字列</h4>
+          <table>
+          <tr><th>キー値</th><th>表示文字列</th></tr>
+          <?php foreach(array_keys($ggp_phase_name) as $iterator){ ?>
+          <tr><td><input type="text" readonly value="<?=$iterator ?>"></td><td><input type="text" id="ggp_phase_name[<?=$iterator ?>]" name="ggp_phase_name[<?=$iterator ?>]" value="<?=$ggp_phase_name[$iterator] ?>" style="width:300px;"></td></tr>
+          <?php } ?>
+          </table>
+          </div>
+          <div class="main">
+          <h4>各フェーズのメッセージ文言</h4>
+          <table>
+          <tr><th>キー値</th><th>表示文字列</th></tr>
+          <?php foreach(array_keys($ggp_msg_array) as $iterator){ ?>
+          <tr><td><input type="text" readonly value="<?=$iterator ?>"></td><td><input type="text" id="ggp_msg_array[<?=$iterator ?>]" name="ggp_msg_array[<?=$iterator ?>]" value="<?=$ggp_msg_array[$iterator] ?>" style="width:300px;"></td></tr>
           <?php } ?>
           </table>
           </div>
@@ -543,7 +604,7 @@ $ggp_action = get_db_table_ggp_action($earth_no, $team_no);
             <td><?php echo $ggp_action[$i]->require_turn; ?>ターン</td>
             </tr>
             <?php } ?>
-            </table>
+          </table>
         </div>
       </div>
     <div>
@@ -569,4 +630,133 @@ function reload_page(){
 <?php
 }
 
+/****************************************************************
+* tag: admin_rollback
+* 【管理画面】ロールバック
+****************************************************************/
+function register_ggp_rollback(){
+}
 
+//ロールバックの実行画面を出力
+function add_ggp_rollback(){
+define('TABLE_NAME_GGP_TEAM',  $wpdb->prefix . 'ggp_team');
+define('TABLE_NAME_GGP_EARTH',  $wpdb->prefix . 'ggp_earth');
+$ggp_init_perteam = get_option('ggp_init_perteam');
+$mode = $_POST['mode'];
+$earth_no = $_POST['earth_no'];
+$team_no = $_POST['team_no'];
+
+// ロールバックが実行された場合の処理
+if($mode == "rollback"){
+  $ggp_team = get_db_table_records(TABLE_NAME_GGP_TEAM,'');
+  $rollback_turn = $ggp_team[$earth_no*$ggp_init_perteam + $team_no]->turn - 1;
+  $team_rollback_transaction = get_db_table_ggp_action_turn($earth_no, $team_no, $rollback_turn);
+  delete_table_ggp_action_rollback($earth_no, $team_no, $rollback_turn);
+
+  foreach($team_rollback_transaction as $iterator){
+    $ggp_earth = get_db_table_records_ggp(TABLE_NAME_GGP_EARTH,"earth_no",$earth_no);
+    $ggp_team = get_db_table_records(TABLE_NAME_GGP_TEAM,'');
+    update_table_ggp_earth($earth_no, $ggp_earth[0]->co2-$iterator->co2);
+    update_table_ggp_team_transaction($earth_no, $team_no, -$iterator->require_turn, $iterator->money, -$iterator->co2);
+    switch ( $iterator->phase ){
+      case "grow" :
+      case "to_factory" :
+      case "make" :
+      case "to_store" :
+        // お米・おせんべいの生産量テーブルを更新する
+        update_table_ggp_action_rice($earth_no, $team_no, $iterator->phase, -$iterator->quantity);
+        break;
+      case "sales" :
+        // 特殊処理は特段不要
+        break;
+      case "reduction" :
+        if($iterator->keyword == "tree"){
+          update_table_ggp_action_tree($earth_no, $team_no, -$iterator->quantity);
+        }else if($iterator->keyword = "buy"){
+          $ggp_quota_co2 = $ggp_earth[0]->co2_quota;
+          update_table_ggp_earth_quota($earth_no, $ggp_quota_co2 - $iterator->quantity);
+          update_table_ggp_team_co2_quota($earth_no, $team_no, $ggp_team[$team_no]->co2_quota - $iterator->quantity);
+        }
+        break;
+
+    }
+  }
+}
+
+$ggp_team = get_db_table_records(TABLE_NAME_GGP_TEAM,'');
+$ggp_action_rice = get_db_table_records(TABLE_NAME_GGP_ACTION_RICE,'');
+$ggp_action_tree = get_db_table_records(TABLE_NAME_GGP_ACTION_TREE,'');
+
+if($earth_no == "")$earth_no = 0;
+if($team_no == "")$team_no = 0;
+$ggp_action = get_db_table_ggp_action($earth_no, $team_no);
+
+?>
+<link href="https://use.fontawesome.com/releases/v5.6.1/css/all.css" rel="stylesheet">
+
+<div class="wrap">
+  <h2>ロールバック</h2>
+  <div class="metabox-holder">
+    <div class="postbox">
+      <h3 class="hndle"><span>各チームの状況／ロールバック</span></h3>
+      <div class="inside">
+        <div class="main">
+          <table class="ggp_team_table_watch">
+          <tr><th style="width:5%;">地球</th><th style="width:5%;">チーム</th><th style="width=22%;">チーム名</th><th style="width:5%; ">ターン</th><th style="width:5%">経済活動</th><th style="width:5%">植樹回数</th><th style="width:10%;">CO2削減量/ターン</th><th style="width:10%; ">お金</th><th style="width:10%; ">CO2排出量</th><th style="width:10%; ">CO2排出上限</th><th style="width:5%;">行動詳細</th><th style="width:8%;">ロールバック</th></tr>
+          <?php
+          for($i = 0; $i < count($ggp_team); $i++){
+          ?>
+          <tr>
+          <td align="center"><?=$ggp_team[$i]->earth_no ?></td>
+          <td align="center"><?=$ggp_team[$i]->team_no ?></td>
+          <td><?=$ggp_team[$i]->teamname ?></td>
+          <td align="center"><?=$ggp_team[$i]->turn ?></td>
+          <td align="center"><?php echo ($ggp_action_rice[$i]->to_store)/5; ?></td>
+          <td align="center"><?php echo ($ggp_action_tree[$i]->tree_num); ?></td>
+          <td align="center"><?php echo ($ggp_action_tree[$i]->reduction_co2); ?></td>
+          <td align="right"><?=$ggp_team[$i]->money ?></td>
+          <td align="right"><?=$ggp_team[$i]->co2 ?></td>
+          <td align="right"><?=$ggp_team[$i]->co2_quota ?></td>
+          <form method="post" action="">
+          <input type="hidden" name="earth_no" value=<?=$ggp_team[$i]->earth_no ?>>
+          <input type="hidden" name="team_no" value=<?=$ggp_team[$i]->team_no ?>>
+          <td align="center" style="border: none; background-color: #F9F9F9;"><?php submit_button("表示",'small','update',false) ?></td>
+          </form>
+          <form method="post" action="">
+          <input type="hidden" name="earth_no" value=<?=$ggp_team[$i]->earth_no ?>>
+          <input type="hidden" name="team_no" value=<?=$ggp_team[$i]->team_no ?>>
+          <input type="hidden" name="mode" value="rollback">
+          <td align="center" style="border: none; background-color: #F9F9F9;"><?php submit_button("取り消す",'primary','update',false) ?></td>
+          </form>
+          </tr>
+          <?php } ?>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="metabox-holder">
+    <div class="postbox postbox-watch">
+      <h3 class="hndle"><span>チームの詳細（<?=$earth_no ?>-<?=$team_no ?> : <?=$ggp_team[$earth_no*$ggp_init_perteam + $team_no]->teamname ?>)</span></h3>
+      <div class="inside">
+        <div class="main">
+          <table class="action_table">
+            <tr><th style="width:15%;">ターン</th><th style="width:40%;">行動</th><th style="width:15%;">お金</th><th style="width:15%;">二酸化炭素</th><th style="width:15%;">必要なターン数</th></tr>
+            <?php for ($i = 0 ; $i < count($ggp_action); $i++){ ?>
+            <tr>
+            <td><?php echo ($ggp_action[$i]->require_turn == 0 ? "-" : $ggp_action[$i]->turn); ?></td>
+            <td style="text-align:left !important;"><img class="icon-action" src="/wp-content/uploads/<?=$ggp_action[$i]->url ?>"><?php echo $phase_name[$ggp_action[$i]->phase].'('.$ggp_action[$i]->cardname.')'; ?></td>
+            <td><?php echo $ggp_action[$i]->money; ?>万円</td>
+            <td><?php echo $ggp_action[$i]->co2; ?>kg</td>
+            <td><?php echo $ggp_action[$i]->require_turn; ?>ターン</td>
+            </tr>
+            <?php } ?>
+            </table>
+        </div>
+      </div>
+    <div>
+  <div>
+</div>
+
+<?php
+}
