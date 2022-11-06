@@ -561,7 +561,7 @@ ob_start();
 </script>
 
 <?php } ?>
-  <h2 id="action_details">チームの詳細（<?=$_POST['submit'] ?>)</h2>
+  <h2 id="action_details">チームの詳細（<?=$_POST['submit'] ?>）</h2>
     <div class="vote">
       <?php foreach($team_info as $iterator){ ?>
       <div class="vote-submit">
@@ -572,7 +572,7 @@ ob_start();
           <input type="hidden" name="is_general" value="<?=$is_general ?>">
           <input type="hidden" id="action_details_earth_no" name="action_details_earth_no" value="<?=$iterator->earth_no ?>">
           <input type="hidden" id="action_details_team_no" name="action_details_team_no" value="<?=$iterator->team_no ?>">
-          <input type="submit" class="vote-submit" name="submit" value="<?=$iterator->teamname ?>">
+          <input type="submit" name="submit" value="<?=$iterator->teamname ?>">
         </form>
       </div>
       <?php } ?>

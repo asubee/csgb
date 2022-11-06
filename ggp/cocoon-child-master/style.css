@@ -67,6 +67,11 @@ table.team_info tr:nth-of-type(2n+1) {
   min-width: 15%;
 }
 
+input.vote-submit {
+  color: #fff;
+  background-color: #004831;
+}
+
 input.btn-select-team {
   color: #fff;
   background-color: #004831;
@@ -153,7 +158,7 @@ input.btn-select-event-selected:disabled {
 .earth-info {
   font-size:0.8em;
   margin: 0.5em;
-  width: 40%;
+  width: 45%;
   float: left;
 }
 
@@ -170,18 +175,19 @@ input.btn-select-event-selected:disabled {
 }
 
 input.team-objective {
-  font-size:1.0em;
+  font-size:0.8em;
   padding: 0.3em 0.3em;
   width: 100%;
 }
 
 table.team-objective {
   background-color: #ffffff;
-  max-width: 800px;
+  max-width: 100%;
 }
 
 table.team-objective tr {
   background-color: #ffffff !important;
+  vertical-align: bottom;
 }
 
 input.btn-submit-team-objective {
@@ -269,7 +275,7 @@ p.card_text_err {
   padding: 0.5em;
   margin: 0em 0em 0.5em 0em;
   height: 10em;
-  width: 55%;
+  width: 53%;
   overflow: hidden scroll;
   border: 1px solid #CCCCCC;
 }

@@ -148,7 +148,7 @@ if( !function_exists('show_ggp_gameboard_earth_select') ):
       </form>
 
       <tr><td><div style="width:100%; height:100px"></div></td></tr>
-
+<!--
       <form method="post" action="">
       <tr><td>
       <input type="hidden" id="ggp_game_reset" name="ggp_game_reset" value="1">
@@ -157,6 +157,7 @@ if( !function_exists('show_ggp_gameboard_earth_select') ):
       </form>
       </table>
       </div>
+-->
       <?php
 
       //バッファした出力を変数に格納
@@ -315,6 +316,7 @@ if( !function_exists( 'show_ggp_gameboard_main' ) ):
     $token = $_POST['token'];
     $id = $_POST['id'];
     $team_objective = $_POST['team_objective'];
+    $team_name = $_POST['team_name'];
     $ggp_team = get_db_table_records_ggp(TABLE_NAME_GGP_TEAM,"earth_no",$earth_no);
     $ggp_earth = get_db_table_records_ggp(TABLE_NAME_GGP_EARTH,"earth_no",$earth_no);
     $ggp_init_earth = get_option('ggp_init_earth');
@@ -371,6 +373,11 @@ if( !function_exists( 'show_ggp_gameboard_main' ) ):
       $team_objective = $ggp_team[$team_no]->team_objective;
     }
 
+    //チーム名を設定する場合
+    if( $team_name != NULL){
+      update_table_ggp_team($earth_no, $team_no, $team_name,$ggp_team[$team_no]->money, $ggp_team[$team_no]->co2);
+    }
+
     //カードが選択された場合
     if( $phase != NULL && $card_no != NULL){
       if(check_allow_transaction($earth_no, $team_no, $id) == false){
@@ -425,7 +432,7 @@ if( !function_exists( 'show_ggp_gameboard_main' ) ):
           insert_table_ggp_action($token, $earth_no, $team_no, $phase, $ggp_team[$team_no]->turn, $ggp_cardinfo[$phase][$card_no]['name'], $ggp_cardinfo[$phase][$card_no]['url'],$ggp_cardinfo[$phase][$card_no]['key'], -$ggp_cardinfo[$phase][$card_no]['money'], $ggp_cardinfo[$phase][$card_no]['co2'],$ggp_cardinfo[$phase][$card_no]['turn'],$ggp_cardinfo[$phase][$card_no]['rice']);
           update_table_ggp_earth($earth_no, $ggp_earth[0]->co2+$ggp_cardinfo[$phase][$card_no]['co2']);
           update_table_ggp_team_transaction($earth_no, $team_no, $ggp_cardinfo[$phase][$card_no]['turn'], $ggp_cardinfo[$phase][$card_no]['money'], $ggp_cardinfo[$phase][$card_no]['co2']);
-          insert_table_ggp_message($earth_no, $ggp_team[$team_no]->turn.'ターン目 : 「'.$ggp_team[$team_no]->teamname.'」チームが。'.$msg_array[$phase].'（'.$ggp_cardinfo[$phase][$card_no]['name'].'）。');
+          insert_table_ggp_message($earth_no, $ggp_team[$team_no]->turn.'ターン目 : 「'.$ggp_team[$team_no]->teamname.'」チームが'.$msg_array[$phase].'（'.$ggp_cardinfo[$phase][$card_no]['name'].'）。');
 
 
           $magnification = $tree_num * $ggp_event_sales_magnification;
@@ -522,7 +529,7 @@ if( !function_exists( 'show_ggp_gameboard_main' ) ):
     if(check_event_arise($earth_no, 1) != ""){
       if($ggp_earth[0]->event_valid_tree == 0){
         update_table_ggp_earth_event_tree($earth_no);
-          insert_table_ggp_message($earth_no,'【イベント】「木を植える」カードの効果が'.(double)get_option('ggp_event_tree_magnification').'倍になりました。');
+          insert_table_ggp_message($earth_no,'【イベント】木を植えるのに補助金が出る。「木を植える」カードの効果が'.(double)get_option('ggp_event_tree_magnification').'倍になる。');
       }
     }
 
@@ -538,7 +545,7 @@ if( !function_exists( 'show_ggp_gameboard_main' ) ):
     for( $i = 0; $i < count($ggp_team); $i++){
       if($i == count($ggp_team) - 1 && $card_turn[0]->event_card_turn != $ggp_team[$team_no]->turn){
         update_table_ggp_earth_event_card_turn($earth_no, $ggp_team[$i]->turn);
-        insert_table_ggp_message($earth_no, '【イベント発生】ファシリテータはイベントのカードを1枚選んでください。');
+        insert_table_ggp_message($earth_no, '【イベント発生】イベントが発生しました。メインルームに戻ってください。');
         break;
       }
       if($ggp_team[$i]->turn == ($event_arise_turn[0]+1) && $ggp_team[$i]->turn == $ggp_team[$i + 1]->turn){
@@ -881,8 +888,7 @@ if( !function_exists( 'show_ggp_gameboard_main' ) ):
       <?php } ?>
       </div>
 
-    <!-- *************チームの目標******* -->
-    <p class="subtitle">チームの目標</p>
+    <!-- *************チーム名／チームの目標を設定************* -->
     <form method="post" action="">
     <table class="team-objective">
       <input type="hidden" name="is_general" value="<?php echo $is_general; ?>">
@@ -890,7 +896,13 @@ if( !function_exists( 'show_ggp_gameboard_main' ) ):
       <input type="hidden" name="team_no" value="<?php echo $team_no; ?>">
       <input type="hidden" name="mode" value="select_boardgame">
       <tr>
-      <td><input type="text" class="team-objective" name="team_objective" id="team_objective" placeholder="チームの目標を入力してください" value="<?=$team_objective ?>"></td>
+      <td>
+        <p class="subtitle">チーム名</p>
+        <input type="text" class="team-objective" name="team_name" id="team_name" placeholder="チーム名を入力してください">
+      </td>
+      <td>
+        <p class="subtitle">チームの目標</p>
+        <input type="text" class="team-objective" name="team_objective" id="team_objective" placeholder="チームの目標を入力してください" value="<?=$team_objective ?>"></td>
       <td><input type="submit" class="btn-submit-team-objective" value="送信"></td>
       </tr>
       </table>

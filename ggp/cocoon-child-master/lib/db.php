@@ -860,7 +860,6 @@ function get_table_action_latest_id($earth_no, $team_no){
 endif;
 
 // 同じチームの画面を複数人が開いていた場合、古い画面でボタンを押されたときにFalseとなるようにする
-// 前のチームを追い越してActionを起こしたときにFalseとなるようにする
 if( !function_exists( 'check_allow_transaction' ) ):
 function check_allow_transaction($earth_no, $team_no, $id){
   $latest_id = get_table_action_latest_id($earth_no, $team_no);

@@ -34,7 +34,7 @@ if( !function_exists( ' show_ggp_event' )):
     if($is_general == NULL)$is_general='disabled';
 
     $ggp_event_list =  Array(
-        Array('key'=>'disaster','text'=>'台風で田んぼと倉庫がやられてしまいました。振り出しに戻る。','value'=>''),
+        Array('key'=>'disaster','text'=>'台風で田んぼと倉庫がやられてしまいました。作ったお米やおせんべいの材料がゼロになる。','value'=>''),
         Array('key'=>'subsidy','text'=>'電気自動車を使った会社に補助金が出ることになった。電気自動車を使った回数&times;'. $ggp_event_subsidy . '万円をもらう。','value'=>$ggp_event_subsidy),
         Array('key'=>'tax','text'=>'ガソリン車を使った会社に税金がかかることになった。ガソリン車を使った回数&times;' . $ggp_event_tax . '万円を支払う。','value'=>$ggp_event_tax),
  //       Array('key'=>'emissions_trading','text'=>'二酸化炭素排出権を買う。'. $ggp_event_emission_trading . '万円を支払って排出量上限を200kg増やす。','value'=>200),
