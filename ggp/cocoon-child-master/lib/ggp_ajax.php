@@ -49,8 +49,9 @@ add_action( 'wp_ajax_nopriv_get_ggp_msg_newest_ajax', 'my_wp_get_ggp_msg_newest_
 
 //非同期通信（地球情報の更新）
 function my_wp_get_ggp_earth_info_ajax() {
+  global $wpdb;
   $earth_no = $_POST['earth_no'];
-  define('TABLE_NAME_GGP_TEAM',  $wpdb->prefix . 'ggp_team');
+  $team_no = $_POST['team_no'];
   $ggp_team = get_db_table_records_ggp(TABLE_NAME_GGP_TEAM,"earth_no",$earth_no);
   $ggp_quota_turn = get_option('ggp_quota_turn');
 
@@ -66,19 +67,27 @@ function my_wp_get_ggp_earth_info_ajax() {
     <tr><td><i class="fas fa-heart"></i>残り回数</td>
     ';
     for($i=0; $i < count($ggp_team); $i++) {
-    $response_msg .=  '<td>'. (intval($ggp_quota_turn) - intval($ggp_team[$i]->turn) + 1) . '/' . $ggp_quota_turn . 'ターン</td>';
+      $response_msg .=  '<td>'. (intval($ggp_quota_turn) - intval($ggp_team[$i]->turn) + 1) . '/' . $ggp_quota_turn . 'ターン</td>';
     }
     $response_msg .= '</tr>
     <tr><td><i class="fas fa-coins"></i>お金</td>
     ';
     for($i=0; $i < count($ggp_team); $i++) {
-    $response_msg .= '<td>' . $ggp_team[$i]->money .'万円</td>';
+      if($i == $team_no || $ggp_team[$team_no]->turn < $ggp_quota_turn/2){
+        $response_msg .= '<td>' . $ggp_team[$i]->money .'万円</td>';
+      }else{
+        $response_msg .= '<td>???万円</td>';
+      }
     }
     $response_msg .= '</tr>
     <tr><td><i class="fas fa-skull-crossbones"></i>二酸化炭素</td>
     ';
     for($i=0; $i < count($ggp_team); $i++) {
-    $response_msg .= '<td>' . $ggp_team[$i]->co2 . 'kg/' . $ggp_team[$i]->co2_quota . 'kg</td>';
+      if($i == $team_no || $ggp_team[$team_no]->turn < $ggp_quota_turn/2){
+        $response_msg .= '<td>' . $ggp_team[$i]->co2 . 'kg/' . $ggp_team[$i]->co2_quota . 'kg</td>';
+      }else{
+        $response_msg .= '<td>???kg/???kg</td>';
+      }
     }
     $response_msg .= '
     </tr>
@@ -94,9 +103,8 @@ add_action( 'wp_ajax_nopriv_get_ggp_earth_info_ajax', 'my_wp_get_ggp_earth_info_
 //非同期通信（地球毎の二酸化炭素排出量取得）
 
 function my_wp_get_ggp_earth_co2_ajax() {
-
+  global $wpdb;
   $earth_no = $_POST['earth_no']; 
-  define('TABLE_NAME_GGP_EARTH',  $wpdb->prefix . 'ggp_earth');
   $ggp_earth = get_db_table_records_ggp(TABLE_NAME_GGP_EARTH,"earth_no",$earth_no);
   //error_log()
 
@@ -117,7 +125,6 @@ add_action( 'wp_ajax_nopriv_get_ggp_earth_co2_ajax', 'my_wp_get_ggp_earth_co2_aj
 function my_wp_get_ggp_team_description_ajax() {
   $earth_no = $_POST['earth_no'];
   $team_no = $_POST['team_no'];
-  define('TABLE_NAME_GGP_TEAM',  $wpdb->prefix . 'ggp_team');
   $ggp_team = get_db_table_records_ggp(TABLE_NAME_GGP_TEAM,"earth_no",$earth_no);
 
   $nonce = $_REQUEST['nonce'];

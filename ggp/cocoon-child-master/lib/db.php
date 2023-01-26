@@ -14,6 +14,8 @@ define('TABLE_NAME_GGP_ACTION_RICE',  $wpdb->prefix . 'ggp_action_rice');
 define('TABLE_NAME_GGP_ACTION_TREE',  $wpdb->prefix . 'ggp_action_tree');
 define('TABLE_NAME_GGP_MESSAGE',  $wpdb->prefix . 'ggp_message');
 define('TABLE_NAME_GGP_OPTIONS',  $wpdb->prefix . 'options');
+define('TABLE_NAME_GGP_CARDINFO',  $wpdb->prefix . 'ggp_cardinfo');
+define('TABLE_NAME_GGP_CARDINFO_INSTANCE',  $wpdb->prefix . 'ggp_cardinfo_instance');
 
 add_action('admin_head', 'create_table_ggp');
 if( !function_exists('create_table_ggp') ) :
@@ -24,6 +26,8 @@ function create_table_ggp(){
   create_table_ggp_action_rice();
   create_table_ggp_action_tree();
   create_table_ggp_message();
+  create_table_ggp_cardinfo();
+  create_table_ggp_cardinfo_instance();
 }
 endif;
 
@@ -76,7 +80,8 @@ function create_table_ggp_earth() {
         co2_quota int,
         event_valid_tree int,
         event_valid_sales int,
-        event_card_turn int
+        event_card_turn int,
+        event_card_count int
         );";
   $res = create_db_table($sql);
   return $res;
@@ -101,10 +106,12 @@ function reset_table_ggp_earth(){
       'co2_quota' => $ggp_quota_co2,
       'event_valid_tree' => 0,
       'event_valid_sales' => 0,
-      'event_card_turn' => 0
+      'event_card_turn' => 0,
+      'event_card_count' => 0
     );
 
     $format = array(
+      '%d',
       '%d',
       '%d',
       '%d',
@@ -230,6 +237,19 @@ function update_table_ggp_earth_event_card_turn($earth_no, $turn){
 
 }
 endif;
+
+if( !function_exists( 'update_table_ggp_earth_event_card_count') ):
+function update_table_ggp_earth_event_card_count($earth_no, $count){
+  $table = TABLE_NAME_GGP_EARTH;
+  global $wpdb;
+  $query = "UPDATE {$table} SET event_card_count = {$count} WHERE earth_no = {$earth_no}";
+  $records = $wpdb->query( $query );
+
+  return $records;
+
+}
+endif;
+
 
 /****************************************************************
 * テーブル名：wp_ggp_team
@@ -834,7 +854,8 @@ function check_co2_over($earth_no, $team_no, $phase, $card_no){
   $ggp_earth = get_db_table_records_ggp(TABLE_NAME_GGP_EARTH,"earth_no",$earth_no);
   $ggp_team = get_db_table_records_ggp(TABLE_NAME_GGP_TEAM,"earth_no",$earth_no);
   $reduction_quantity_tree = (int)(get_table_ggp_action_tree($earth_no, $team_no))[0]->reduction_co2;
-  $ggp_cardinfo = get_option('ggp_cardinfo');
+//  $ggp_cardinfo = get_option('ggp_cardinfo');
+  $ggp_cardinfo = get_table_ggp_cardinfo_nested();
 
   if($phase == 'reduction'){
     return false;
@@ -1212,6 +1233,8 @@ function reset_table_ggp_all(){
   reset_table_ggp_action_rice();
   reset_table_ggp_action_tree();
   reset_table_ggp_message();
+  reset_table_ggp_cardinfo_instance();
+  reset_parameter_ggp_event_preselect();
 }
 endif;
 
@@ -1223,6 +1246,8 @@ function reset_table_ggp_transaction(){
   reset_table_ggp_action_rice();
   reset_table_ggp_action_tree();
   reset_table_ggp_message();
+  reset_table_ggp_cardinfo_instance();
+  reset_parameter_ggp_event_preselect();
 }
 endif;
 
@@ -1257,3 +1282,325 @@ function event_count_car_truck($earth_no, $team_no) {
 
 }
 endif;
+
+/****************************************************************
+* テーブル名：wp_ggp_cardinfo
+* 役割：カードの情報マスタ
+*
+* <<テーブル情報>>
+*  *ID                    id                  int     auto_increment
+*  フェーズ               phase               string  カードのフェーズを示す値（grow, to_factory, make, to_store, reduction）
+*  名称                   name                string  カードの名称
+*  説明                   description         string
+*  画像のURL              url                 string
+*  キーワード             keyword             string
+*  お金                   money               int     お金を入手する場合はプラス、支払する場合はマイナス
+*  米の量                 rice                int     
+*  Co2排出量              co2                 int     通常はプラス、植林などで減らせる場合はマイナス
+*  ターン数               turn                int     このカードで必要なターン数
+*  表示・非表示切り替え   is_visible          bool    
+*  有効・無効切り替え     is_valid            bool
+/****************************************************************/
+
+//テーブルを作成する
+if( !function_exists( 'create_table_ggp_cardinfo' ) ):
+function create_table_ggp_cardinfo(){
+  if(is_db_table_exist(TABLE_NAME_GGP_CARDINFO) ){
+    return;
+  }
+
+  $sql = "CREATE TABLE " .TABLE_NAME_GGP_CARDINFO." (
+        id int AUTO_INCREMENT NOT NULL PRIMARY KEY,
+        phase varchar(50),
+        name varchar(50),
+        description varchar(100),
+        url varchar(50),
+        keyword varchar(50),
+        money int,
+        rice int,
+        co2 int,
+        turn int,
+        is_visible int,
+        is_valid int
+        );";
+    $res = create_db_table($sql);
+    return $res;
+}
+endif;
+
+if( !function_exists( 'get_table_ggp_cardinfo') ):
+function get_table_ggp_cardinfo(){
+  $table = TABLE_NAME_GGP_CARDINFO;
+  global $wpdb;
+  $query = "SELECT * FROM {$table}";
+  $records = $wpdb->get_results($query);
+  return $records;
+}
+endif;
+
+if( !function_exists( 'get_table_ggp_cardinfo_nested') ):
+function get_table_ggp_cardinfo_nested(){
+  $table = TABLE_NAME_GGP_CARDINFO;
+  global $wpdb;
+  $query = "SELECT * FROM {$table}";
+  $records = $wpdb->get_results($query);
+
+  $result_nested = Array();
+  $j = 0;
+  for($i = 0; $i < count($records); $i++){
+    foreach($records[$i] as $key => $value){
+      $result_nested[$records[$i]->phase][$j][$key] = $value;
+    }
+    if($i < count($records) - 1 && $records[$i]->phase != $records[$i+1]->phase){
+       $j = 0;
+    }else{
+       $j++;
+    }
+  }
+  return $result_nested;
+}
+endif;
+
+
+if( !function_exists( 'insert_table_ggp_cardinfo' ) ): function insert_table_ggp_cardinfo($phase, $name, $description, $url, $keyword, $money, $rice, $co2, $turn, $is_visible, $is_valid ){
+  $table = TABLE_NAME_GGP_CARDINFO;
+  global $wpdb;
+  $data = array(
+          'phase' => $phase,
+          'name' => $name,
+          'description' => $description,
+          'url' => $url,
+          'keyword' => $keyword,
+          'money' => $money,
+          'rice' => $rice,
+          'co2' => $co2,
+          'turn' => $turn,
+          'is_visible' => $is_visible,
+          'is_valid' => $is_valid
+          );
+  $format = array(
+          '%s',
+          '%s',
+          '%s',
+          '%s',
+          '%s',
+          '%d',
+          '%d',
+          '%d',
+          '%d',
+          '%d',
+          '%d',
+          );
+  return insert_db_table_record($table, $data, $format);
+}
+endif;
+
+if( !function_exists( 'reset_table_ggp_cardinfo' )):
+function reset_table_ggp_cardinfo(){
+  $table = TABLE_NAME_GGP_CARDINFO;
+  uninstall_db_table($table);
+  create_table_ggp_cardinfo();
+}
+endif;
+
+/****************************************************************
+* テーブル名：wp_ggp_cardinfo_instance
+* 役割：カードの情報（チーム毎）
+*
+* <<テーブル情報>>
+*  *地球No                earth_no
+*  *チームNo              team_no
+*  *ID                    id                  int     
+*  フェーズ               phase               string  カードのフェーズを示す値（grow, to_factory, make, to_store, reduction）
+*  名称                   name                string  カードの名称
+*  説明                   description         string
+*  画像のURL              url                 string
+*  キーワード             keyword             string
+*  お金                   money               int     お金を入手する場合はプラス、支払する場合はマイナス
+*  米の量                 rice                int     
+*  Co2排出量              co2                 int     通常はプラス、植林などで減らせる場合はマイナス
+*  ターン数               turn                int     このカードで必要なターン数
+*  表示・非表示切り替え   is_visible          bool    
+*  有効・無効切り替え     is_valid            bool
+/****************************************************************/
+
+//テーブルを作成する
+if( !function_exists( 'create_table_ggp_cardinfo_instance' ) ):
+function create_table_ggp_cardinfo_instance(){
+  if(is_db_table_exist(TABLE_NAME_GGP_CARDINFO_INSTANCE) ){
+    return;
+  }
+
+  $sql = "CREATE TABLE " .TABLE_NAME_GGP_CARDINFO_INSTANCE." (
+        earth_no int,
+        team_no int,
+        id int,
+        phase varchar(50),
+        name varchar(50),
+        description varchar(100),
+        url varchar(50),
+        keyword varchar(50),
+        money int,
+        rice int,
+        co2 int,
+        turn int,
+        is_visible int,
+        is_valid int,
+        PRIMARY KEY(earth_no, team_no, id)
+        );";
+    $res = create_db_table($sql);
+    return $res;
+}
+endif;
+
+if( !function_exists( 'get_table_ggp_cardinfo_instance') ):
+function get_table_ggp_cardinfo_instance($earth_no, $team_no){
+  $table = TABLE_NAME_GGP_CARDINFO_INSTANCE;
+  global $wpdb;
+  $query = $wpdb->prepare("SELECT * FROM {$table} WHERE earth_no LIKE %s AND team_no LIKE %s",$earth_no, $team_no);
+  $records = $wpdb->get_results($query);
+  return $records;
+}
+endif;
+
+if( !function_exists( 'get_table_ggp_cardinfo_instance_nested') ):
+function get_table_ggp_cardinfo_instance_nested($earth_no, $team_no){
+  $table = TABLE_NAME_GGP_CARDINFO_INSTANCE;
+  global $wpdb;
+  $query = $wpdb->prepare("SELECT * FROM {$table} WHERE earth_no LIKE %s AND team_no LIKE %s",$earth_no, $team_no);
+  $records = $wpdb->get_results($query);
+
+  $result_nested = Array();
+  $j = 0;
+  for($i = 0; $i < count($records); $i++){
+    foreach($records[$i] as $key => $value){
+      $result_nested[$records[$i]->phase][$j][$key] = $value;
+    }
+    if($i < count($records) - 1 && $records[$i]->phase != $records[$i+1]->phase){
+       $j = 0;
+    }else{
+       $j++;
+    }
+  }
+  return $result_nested;
+}
+endif;
+
+
+if( !function_exists( 'insert_table_ggp_cardinfo_instance' ) ): 
+function insert_table_ggp_cardinfo_instance($earth_no, $team_no, $id, $phase, $name, $description, $url, $keyword, $money, $rice, $co2, $turn, $is_visible, $is_valid ){
+  $table = TABLE_NAME_GGP_CARDINFO_INSTANCE;
+  global $wpdb;
+  $data = array(
+          'earth_no' => $earth_no,
+          'team_no' => $team_no,
+          'id' => $id,
+          'phase' => $phase,
+          'name' => $name,
+          'description' => $description,
+          'url' => $url,
+          'keyword' => $keyword,
+          'money' => $money,
+          'rice' => $rice,
+          'co2' => $co2,
+          'turn' => $turn,
+          'is_visible' => $is_visible,
+          'is_valid' => $is_valid
+          );
+  $format = array(
+          '%s', //earth_no
+          '%s', //team_no
+          '%d', //id
+          '%s', //phase
+          '%s', //name
+          '%s', //description
+          '%s', //url
+          '%s', //keyword
+          '%d', //money
+          '%d', //rice
+          '%d', //co2
+          '%d', //turn
+          '%d', //is_visible
+          '%d', //is_valid
+          );
+  return insert_db_table_record($table, $data, $format);
+}
+endif;
+
+if( !function_exists( 'reset_table_ggp_cardinfo_instance' )):
+function reset_table_ggp_cardinfo_instance(){
+  $table = TABLE_NAME_GGP_CARDINFO_INSTANCE;
+  uninstall_db_table($table);
+  create_table_ggp_cardinfo_instance();
+
+  $ggp_init_earth = get_option('ggp_init_earth');
+  $ggp_init_perteam = get_option('ggp_init_perteam');
+  $ggp_cardinfo_master = get_table_ggp_cardinfo();
+
+  for($earth_no =0; $earth_no < $ggp_init_earth; $earth_no++){
+  for($team_no = 0; $team_no < $ggp_init_perteam; $team_no++){
+  foreach($ggp_cardinfo_master as $line){
+    $table = TABLE_NAME_GGP_CARDINFO_INSTANCE;
+    $data = array(
+          'earth_no' => $earth_no,
+          'team_no' => $team_no,
+          'id' => $line->id,
+          'phase' => $line->phase,
+          'name' => $line->name,
+          'description' => $line->description,
+          'url' => $line->url,
+          'keyword' => $line->keyword,
+          'money' => $line->money,
+          'rice' => $line->rice,
+          'co2' => $line->co2,
+          'turn' => $line->turn,
+          'is_visible' => $line->is_visible,
+          'is_valid' => $line->is_valid
+          );
+    $format = array(
+          '%s', //earth_no
+          '%s', //team_no
+          '%d', //id
+          '%s', //phase
+          '%s', //name
+          '%s', //description
+          '%s', //url
+          '%s', //keyword
+          '%d', //money
+          '%d', //rice
+          '%d', //co2
+          '%d', //turn
+          '%d', //is_visible
+          '%d', //is_valid
+          );
+    insert_db_table_record($table, $data, $format);
+    }
+  }
+  }
+}
+endif;
+
+if( !function_exists(' reset_parameter_ggp_event_preselect') ):
+function reset_parameter_ggp_event_preselect(){
+  global $wpdb;
+  $table = $wpdb->prefix . 'options';
+  $data = "a:3:{i:0;s:0:\"\";i:1;s:0:\"\";i:2;s:0:\"\";}";
+  $query = "UPDATE {$table} SET option_value = '{$data}' WHERE option_name = 'ggp_event_preselect'";
+  $records = $wpdb->get_results($query);
+  return $records;
+}
+endif;
+
+if( !function_exists(' set_parameter_ggp_event_preselect') ):
+function set_parameter_ggp_event_preselect($keyword, $count){
+  global $wpdb;
+  $ggp_event_preselect = get_option('ggp_event_preselect');
+  $ggp_event_preselect[$count] = $keyword;
+  $table = $wpdb->prefix . 'options';
+  $data = "a:3:{i:0;s:" . mb_strlen($ggp_event_preselect[0]) . ":\"" . $ggp_event_preselect[0] . "\";i:1;s:" . mb_strlen($ggp_event_preselect[1]) . ":\"" . $ggp_event_preselect[1] . "\";i:2;s:" . mb_strlen($ggp_event_preselect[2]) . ":\"" . $ggp_event_preselect[2] . "\";\}";
+  $query = "UPDATE {$table} SET option_value = '{$data}' WHERE option_name = 'ggp_event_preselect'";
+  $records = $wpdb->get_results($query);
+  return $records;
+}
+endif;
+

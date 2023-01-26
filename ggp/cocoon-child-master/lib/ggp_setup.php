@@ -6,6 +6,7 @@
 
 require_once(get_stylesheet_directory().'/lib/db.php');
 require_once(get_stylesheet_directory().'/lib/ggp_ajax.php');
+require_once(get_stylesheet_directory().'/lib/ggp_game_event.php');
 
 add_action('admin_menu', 'ggp_setup');
 
@@ -41,11 +42,10 @@ function register_ggp_game_setup(){
   register_setting('ggp_game_setup_group','ggp_init_earth');
   register_setting('ggp_game_setup_group','ggp_init_perteam');
   register_setting('ggp_game_setup_group','ggp_init_co2_gameover');
-  register_setting('ggp_game_setup_group','ggp_cardinfo');
   register_setting('ggp_game_setup_group','ggp_cardcount');
-  register_setting('ggp_game_setup_group','ggp_reduction_valid');
   register_setting('ggp_game_setup_group','ggp_phase_name');
   register_setting('ggp_game_setup_group','ggp_msg_array');
+  register_setting('ggp_game_setup_group','ggp_event_preselect');
   register_setting('ggp_game_setup_group','ggp_event_tree');
   register_setting('ggp_game_setup_group','ggp_event_tree_magnification');
   register_setting('ggp_game_setup_group','ggp_event_sales');
@@ -65,12 +65,14 @@ function register_ggp_game_setup(){
 }
 
 function add_ggp_game_setup(){
-
-$ggp_cardinfo = get_option('ggp_cardinfo');
+$ggp_cardinfo_db_post = $_POST['ggp_cardinfo_db'];
+$ggp_cardinfo_db = get_table_ggp_cardinfo();
 $ggp_cardcount = get_option('ggp_cardcount');
 $ggp_phase_name = get_option('ggp_phase_name');
 $ggp_msg_array = get_option('ggp_msg_array');
 $ggp_reduction_valid = get_option('ggp_reduction_valid');
+$ggp_event_preselect = get_option('ggp_event_preselect');
+$ggp_event_list = get_ggp_event_list();
 $ggp_event_tree = get_option('ggp_event_tree');
 $ggp_event_sales = get_option('ggp_event_sales');
 $ggp_event_subsidy = get_option('ggp_event_subsidy');
@@ -87,6 +89,8 @@ $ggp_event_popularity = get_option('ggp_event_popularity');
 $ggp_event_scandal = get_option('ggp_event_scandal');
 $ggp_event_protect_environment_action = get_option('ggp_event_protect_environment_action');
 $ggp_event_restriction_gascars = get_option('ggp_event_restriction_gascars');
+
+
 
 if(!is_array($ggp_event_protect_environment_action)){
   $ggp_event_protect_environment_action = array_fill(0, 5, "");
@@ -112,69 +116,102 @@ if(!is_array($ggp_event_arise_turn)){
   $ggp_event_arise_turn = array_fill(0, 3, "");
 }
 
-if(!is_array($ggp_cardinfo)){
-  $ggp_cardcount =Array('grow'=>5,'to_factory'=>5, 'make'=>5, 'to_store'=>5, 'reduction'=>3);
-  $ggp_cardinfo = Array();
-
-  foreach($ggp_cardcount as $key => $value){
-    $card_array = Array();
-    for($i = 0; $i < (int)$value; $i++){
-      array_push($card_array, Array('description'=>'','name'=>'','url'=>'','money'=>'','co2'=>'','turn'=>'','is_visible'=>'1', 'is_visible'=>'1') );
-    }
-    $ggp_cardinfo[$key] = $card_array;
-  }
+if(!is_array($ggp_event_preselect)){
+  $ggp_event_preselect = array_fill(0, 3, "");
 }
+
+// カード情報の削除(DB修正)
+if(false){
+   reset_table_ggp_cardinfo();
+   $ggp_cardinfo_db = get_table_ggp_cardinfo();
+}
+
+// カード情報が何もなかった場合に初期化する（箱だけ作成）
+if( !is_array($ggp_cardinfo_db) || count($ggp_cardinfo_db) == 0 ){
+  $ggp_cardcount = Array('grow'=>5,'to_factory'=>5, 'make'=>5, 'to_store'=>5, 'reduction'=>10);
+  foreach($ggp_cardcount as $key => $value){
+    for($i = 0; $i < (int)$value; $i++){
+      insert_table_ggp_cardinfo($key,"","","","",0,0,0,0,0,0);
+    }
+  }
+  $ggp_cardinfo_db = get_table_ggp_cardinfo();
+}
+
+// カード情報が更新された場合
+if(isset($ggp_cardinfo_db_post) && is_array($ggp_cardinfo_db_post)){
+  reset_table_ggp_cardinfo();
+  foreach($ggp_cardinfo_db_post as $value){
+    insert_table_ggp_cardinfo(
+      $value['phase'],
+      $value['name'],
+      $value['description'],
+      $value['url'],
+      $value['keyword'],
+      $value['money'],
+      $value['rice'],
+      $value['co2'],
+      $value['turn'],
+      (isset($value['is_visible'])?"1":NULL),
+      (isset($value['is_valid'])?"1":NULL),
+      );
+  }
+  $ggp_cardinfo_db = get_table_ggp_cardinfo();
+}
+
 
 $tree_card_no = 0;
 // key=treeとなっているカードの番号を探索する
-for($tree_card_no = 0; $tree_card_no < count($ggp_cardinfo['reduction']); $tree_card_no++){
-  if($ggp_cardinfo['reduction'][$tree_card_no]['key'] == 'tree') break;
+for($tree_card_no = 0; $tree_card_no < count($ggp_cardinfo_db); $tree_card_no++){
+  if($ggp_cardinfo_db[$tree_card_no]->keyword == 'tree') break;
 }
 
 ?>
 <div class="wrap">
   <h2>ゲーム設定</h2>
+  <div class="metabox-holder">
   <form method="post" action="options.php" enctype="multipart/form-data" encoding="multipart/form-data">
-    <?php
+  <?php
     settings_fields('ggp_game_setup_group');
     do_settings_sections('ggp_game_setup_group');
-     ?>
-    <div class="metabox-holder">
-      <div class="postbox">
-        <h3 class="hndle"><span>ゲーム初期設定</span></h3>
-        <div class="inside">
-          <div class="main">
-          <table>
+  ?>
+  <div class="postbox">
+    <h3 class="hndle section"><span>ゲーム初期設定</span></h3>
+    <div class="inside">
+      <div class="main">
+        <table>
           <tr><td>ターン数</td><td><input type="text" id="ggp_quota_turn" name="ggp_quota_turn" value="<?php echo get_option('ggp_quota_turn'); ?>">ターン</td></tr>
-          <tr><td>CO2排出上限</td><td><input type="text" id="ggp_quota_co2" name="ggp_quota_co2" value="<?php echo get_option('ggp_quota_co2'); ?>">kg/地球</td></tr>
+          <tr><td>CO2排出上限</td><td><input type="text" id="ggp_quota_co2" name="ggp_quota_co2" value="<?php echo get_option('ggp_quota_co2'); ?>">kg/地球 (3チーム制：1,500kg、4チーム制：1,800kgが目安）</td></tr>
           <tr><td>スタート時の所持金額</td><td><input type="text" id="ggp_init_money" name="ggp_init_money" value="<?php echo get_option('ggp_init_money'); ?>">万円</td></tr>
           <tr><td>各チームのCO2排出上限</td><td><input type="text" id="ggp_init_quota_co2_perteam" name="ggp_init_quota_co2_perteam" value="<?php echo get_option('ggp_init_quota_co2_perteam'); ?>">kg/チーム</td></tr>
           <tr><td>売上設定（５トン毎）</td><td><input type="text" id="ggp_init_sales" name="ggp_init_sales" value="<?php echo get_option('ggp_init_sales'); ?>">万円</td></tr>
           <tr><td>地球の個数</td><td><input type="text" id="ggp_init_earth" name="ggp_init_earth" value="<?php echo get_option('ggp_init_earth'); ?>">個</td></tr>
           <tr><td>地球毎のチーム数</td><td><input type="text" id="ggp_init_perteam" name="ggp_init_perteam" value="<?php echo get_option('ggp_init_perteam'); ?>">チーム／地球</td></tr>
           <tr><td>ゲームオーバー機能</td><td><input type="checkbox" id="ggp_init_co2_gameover" name="ggp_init_co2_gameover" value="1" <?php checked(1, $ggp_init_co2_gameover); ?>>（チェックをつけると有効）地球毎、チーム毎のCO2排出量上限に達するとゲームオーバー</td></tr>
-          </table>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="metabox-holder">
-      <div class="postbox">
-        <h3 class="hndle"><span>イベント設定</span></h3>
-        <div class="inside">
-          <div class="main">
+        </table>
+      </div> <!-- main -->
+    </div>   <!-- inside -->
+    <h3 class="hndle section"><span>イベント設定</span></h3>
+    <div class="inside">
+        <div class="main">
           <h4>デフォルトイベント</h4>
           <p>経済活動１回目終了後（デモ時はOffにすること）</p>
-          <p><input type="checkbox" id="ggp_event_tree" name="ggp_event_tree" value="1" <?php checked(1, $ggp_event_tree); ?>>&nbsp;植樹の効果<?=$ggp_event_tree_magnification ?>倍（チェックをつけると有効）<?php if($ggp_event_tree != NULL){ ?> <font color="red">植林の効果<?=$ggp_event_tree_magnification ?>倍発動中(<?=$ggp_cardinfo['reduction'][$tree_card_no]['co2'] ?>kg/毎ターンから<?=$ggp_cardinfo['reduction'][$tree_card_no]['co2']*$ggp_event_tree_magnification ?>kg/毎ターンに増加）</font> <?php }; ?>
+          <p><input type="checkbox" id="ggp_event_tree" name="ggp_event_tree" value="1" <?php checked(1, $ggp_event_tree); ?>>&nbsp;植樹の効果<?=$ggp_event_tree_magnification ?>倍（チェックをつけると有効）<?php if($ggp_event_tree != NULL){ ?> <font color="red">植林の効果<?=$ggp_event_tree_magnification ?>倍発動中(<?=$ggp_cardinfo_db[$tree_card_no]->co2 ?>kg/毎ターンから<?=$ggp_cardinfo_db[$tree_card_no]->co2*$ggp_event_tree_magnification ?>kg/毎ターンに増加）</font> <?php }; ?>
             <input type="hidden" id="ggp_event_tree_magnification" name="ggp_event_tree_magnification" value=<?=$ggp_event_tree_magnification ?>>
           <p>経済活動２回目終了後</p>
           <p><input type="checkbox" id="ggp_event_sales" name="ggp_event_sales" value="1" <?php checked(1, $ggp_event_sales); ?>>&nbsp;売り上げ倍増：植樹回数&#x2613;<?=$ggp_event_sales_magnification ?>倍（チェックをつけると有効）<?php if($ggp_event_sales != NULL){ ?> <font color="red">売り上げ倍増発動中(植樹回数&#x2613;<?=$ggp_event_sales_magnification; ?>倍に増加）</font> <?php }; ?>
             <input type="hidden" id="ggp_event_sales_magnification" name="ggp_event_sales_magnification" value=<?=$ggp_event_sales_magnification ?>>
           <h4>ルーレットイベント</h4>
           <table>
-          <tr><td></td><td>イベント発生ターン</td><td>
+          <tr><td>-</td><td>イベント発生ターン</td><td>
           <?php for($i = 0; $i < count($ggp_event_arise_turn); $i++){
           ?><input type="text" id="ggp_event_arise_turn[<?=$i ?>]" name="ggp_event_arise_turn[<?=$i ?>]" value="<?=$ggp_event_arise_turn[$i] ?>">
+          <?php } ?></td>
+          <tr><td>-</td><td>イベントの設定<br>(初期化時にリセットされます)</td><td>
+          <?php for($i = 0; $i < count($ggp_event_preselect); $i++){
+          ?><select id="ggp_event_preselect[<?=$i ?>]" name="ggp_event_preselect[<?=$i ?>]">
+              <option value="">ランダム</option>
+              <?php for($j = 0; $j < count($ggp_event_list); $j++){ ?> <option value="<?=$j ?>" <?php if($ggp_event_preselect[$i]==$j){ ?>selected<?php } ?>><?=$ggp_event_list[$j]['subject'] ?> </option> <?php } ?>
+            </select>
           <?php } ?></td>
           <tr><td>(1)</td><td>台風で田んぼと工場がやられる</td><td>(設定値なし)</td></tr>
           <tr><td>(2)</td><td>電気自動車を使った会社に補助金</td><td><input type="text" id="ggp_event_subsidy" name="ggp_event_subsidy" value="<?=$ggp_event_subsidy ?>">万円／電気自動車を使った回数</td></tr>
@@ -186,11 +223,11 @@ for($tree_card_no = 0; $tree_card_no < count($ggp_cardinfo['reduction']); $tree_
           <input type="text" id="ggp_event_not_clean_energy[<?=$i ?>]" name="ggp_event_not_clean_energy[<?=$i ?>]" value="<?=$ggp_event_not_clean_energy[$i]; ?>">
           <? } ?>
           </td></tr>
-          <tr><td>(6)</td><td>排出量上限の引き下げ量</td><td><input type="text" id="ggp_event_reduction_quota_co2" name="ggp_event_reduction_quota_co2" value="<?=$ggp_event_reduction_quota_co2 ?>">kg/地球</td></tr>
-          <tr><td>(7)</td><td>直売所での売り上げ金額</td><td><input type="text" id="ggp_event_direct_store" name="ggp_event_direct_store" value="<?=$ggp_event_direct_store ?>">万円</td></tr>
+          <tr><td>(6)</td><td>Co2排出量上限の引き下げ</td><td><input type="text" id="ggp_event_reduction_quota_co2" name="ggp_event_reduction_quota_co2" value="<?=$ggp_event_reduction_quota_co2 ?>">kg/地球</td></tr>
+          <tr><td>(7)</td><td>工場に直売所を設置<br>売り上げ金額</td><td><input type="text" id="ggp_event_direct_store" name="ggp_event_direct_store" value="<?=$ggp_event_direct_store ?>">万円</td></tr>
           <tr><td>(8)</td><td>人気が出て売り上げUp</td><td><input type="text" id="ggp_event_popularity" name="ggp_event_popularity" value="<?=$ggp_event_popularity ?>">倍</td></tr>
           <tr><td>(9)</td><td>虫が入っていて売り上げDown</td><td><input type="text" id="ggp_event_scandal" name="ggp_event_scandal" value="<?=$ggp_event_scandal ?>">倍</td></tr>
-          <tr><td>(10)</td><td>環境に良い取り組み<br>環境に良い取り組みのカードのキー値</td>
+          <tr><td>(10)</td><td>環境に良い取り組みに補助金<br>環境に良い取り組みのカードのキー値</td>
           <td>
           <?php for($i = 0; $i < count($ggp_event_protect_environment_action); $i++){ ?>
           <input type="text" id="ggp_event_protect_environment_action[<?=$i ?>]" name="ggp_event_protect_environment_action[<?=$i ?>]" value="<?=$ggp_event_protect_environment_action[$i]; ?>">
@@ -203,128 +240,11 @@ for($tree_card_no = 0; $tree_card_no < count($ggp_cardinfo['reduction']); $tree_
           <? } ?>
           </td></tr>
           </table>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="metabox-holder">
-      <div class="postbox">
-        <h3 class="hndle"><span>カード設定</span></h3>
-        <div class="inside">
-          <div class="main">
-          <h4><span>米を育てる</span></h4>
-          <table class="ggp_game_table">
-          <tr><th style="width:10%;">名称</th><th style="width:20%;">説明</th><th style="width:10%;">画像ファイル名</th><th style="width:10%;">キー値</th><th style="width:5%;">必要金額[万円]</th><th style="width:5%;">米の量[トン]</th><th style="width:5%;">CO2排出量[kg]</th><th style="width:5%;">必要ターン数</th><th style="width:2%;">表示</th><th style="width:2%;">有効</th></tr>
-          <?php
-          for($i = 0; $i < count($ggp_cardinfo['grow']); $i++){ ?>
-          <tr>
-          <td><input type="text" id="ggp_cardinfo[grow][<?php echo $i; ?>][name]" name="ggp_cardinfo[grow][<?php echo $i; ?>][name]" value="<?php echo $ggp_cardinfo['grow'][$i]['name']; ?>" style="width:100%;"></td>
-          <td><input type="text" id="ggp_cardinfo[grow][<?php echo $i; ?>][description]" name="ggp_cardinfo[grow][<?php echo $i; ?>][description]" value="<?php echo $ggp_cardinfo['grow'][$i]['description']; ?>" style="width:100%;"></td>
-          <td><input type="text" id="ggp_cardinfo[grow][<?php echo $i; ?>][url]" name="ggp_cardinfo[grow][<?php echo $i; ?>][url]" value="<?php echo $ggp_cardinfo['grow'][$i]['url']; ?>" style="width:100%;"></td>
-          <td><input type="text" id="ggp_cardinfo[grow][<?php echo $i; ?>][key]" name="ggp_cardinfo[grow][<?php echo $i; ?>][key]" value="<?php echo $ggp_cardinfo['grow'][$i]['key']; ?>" style="width:100%;"></td>
-          <td><input type="text" id="ggp_cardinfo[grow][<?php echo $i; ?>][money]" name="ggp_cardinfo[grow][<?php echo $i; ?>][money]" value="<?php echo $ggp_cardinfo['grow'][$i]['money']; ?>" style="width:100%;"></td>
-          <td><input type="text" id="ggp_cardinfo[grow][<?php echo $i; ?>][rice]" name="ggp_cardinfo[grow][<?php echo $i; ?>][rice]" value="<?php echo $ggp_cardinfo['grow'][$i]['rice']; ?>" style="width:100%;"></td>
-          <td><input type="text" id="ggp_cardinfo[grow][<?php echo $i; ?>][co2]" name="ggp_cardinfo[grow][<?php echo $i; ?>][co2]" value="<?php echo $ggp_cardinfo['grow'][$i]['co2']; ?>" style="width:100%;"></td>
-          <td><input type="text" id="ggp_cardinfo[grow][<?php echo $i; ?>][turn]" name="ggp_cardinfo[grow][<?php echo $i; ?>][turn]" value="<?php echo $ggp_cardinfo['grow'][$i]['turn']; ?>" style="width:100%;"></td>
-          <td style="text-align:center;"><input type="checkbox" id="ggp_cardinfo[grow][<?php echo $i; ?>][is_valid]" name="ggp_cardinfo[grow][<?php echo $i; ?>][is_visible]" value="1" <?php checked(1, $ggp_cardinfo['grow'][$i]['is_visible']); ?>"></td>
-          <td style="text-align:center;"><input type="checkbox" id="ggp_cardinfo[grow][<?php echo $i; ?>][is_valid]" name="ggp_cardinfo[grow][<?php echo $i; ?>][is_valid]" value="1" <?php checked(1, $ggp_cardinfo['grow'][$i]['is_valid']); ?>"></td>
-          </tr>
-          <?php } ?>
-          </table>
-          </div>
-          <div class="main">
-          <h4><span>運搬（田んぼから工場）</span></h4>
-          <table class="ggp_game_table">
-          <tr><th style="width:10%;">名称</th><th style="width:20%;">説明</th><th style="width:10%;">画像ファイル名</th><th style="width:10%;">キー値</th><th style="width:5%;">必要金額[万円]</th><th style="width:5%;">米の量[トン]</th><th style="width:5%;">CO2排出量[kg]</th><th style="width:5%;">必要ターン数</th><th style="width:2%;">表示</th><th style="width:2%;">有効</th></tr>
-          <?php
-          for($i = 0; $i < count($ggp_cardinfo['to_factory']); $i++){ ?>
-          <tr>
-          <td><input type="text" id="ggp_cardinfo[to_factory][<?php echo $i; ?>][name]" name="ggp_cardinfo[to_factory][<?php echo $i; ?>][name]" value="<?php echo $ggp_cardinfo['to_factory'][$i]['name']; ?>" style="width:100%;"></td>
-          <td><input type="text" id="ggp_cardinfo[to_factory][<?php echo $i; ?>][description]" name="ggp_cardinfo[to_factory][<?php echo $i; ?>][description]" value="<?php echo $ggp_cardinfo['to_factory'][$i]['description']; ?>" style="width:100%;"></td>
-          <td><input type="text" id="ggp_cardinfo[to_factory][<?php echo $i; ?>][url]" name="ggp_cardinfo[to_factory][<?php echo $i; ?>][url]" value="<?php echo $ggp_cardinfo['to_factory'][$i]['url']; ?>" style="width:100%;"></td>
-          <td><input type="text" id="ggp_cardinfo[to_factory][<?php echo $i; ?>][key]" name="ggp_cardinfo[to_factory][<?php echo $i; ?>][key]" value="<?php echo $ggp_cardinfo['to_factory'][$i]['key']; ?>" style="width:100%;"></td>
-          <td><input type="text" id="ggp_cardinfo[to_factory][<?php echo $i; ?>][money]" name="ggp_cardinfo[to_factory][<?php echo $i; ?>][money]" value="<?php echo $ggp_cardinfo['to_factory'][$i]['money']; ?>" style="width:100%;"></td>
-          <td><input type="text" id="ggp_cardinfo[to_factory][<?php echo $i; ?>][rice]" name="ggp_cardinfo[to_factory][<?php echo $i; ?>][rice]" value="<?php echo $ggp_cardinfo['to_factory'][$i]['rice']; ?>" style="width:100%;"></td>
-          <td><input type="text" id="ggp_cardinfo[to_factory][<?php echo $i; ?>][co2]" name="ggp_cardinfo[to_factory][<?php echo $i; ?>][co2]" value="<?php echo $ggp_cardinfo['to_factory'][$i]['co2']; ?>" style="width:100%;"></td>
-          <td><input type="text" id="ggp_cardinfo[to_factory][<?php echo $i; ?>][turn]" name="ggp_cardinfo[to_factory][<?php echo $i; ?>][turn]" value="<?php echo $ggp_cardinfo['to_factory'][$i]['turn']; ?>" style="width:100%;"></td>
-          <td style="text-align:center;"><input type="checkbox" id="ggp_cardinfo[to_factory][<?php echo $i; ?>][is_visible]" name="ggp_cardinfo[to_factory][<?php echo $i; ?>][is_visible]" value="1" <?php checked(1, $ggp_cardinfo['to_factory'][$i]['is_visible']); ?>"></td>
-          <td style="text-align:center;"><input type="checkbox" id="ggp_cardinfo[to_factory][<?php echo $i; ?>][is_valid]" name="ggp_cardinfo[to_factory][<?php echo $i; ?>][is_valid]" value="1" <?php checked(1, $ggp_cardinfo['to_factory'][$i]['is_valid']); ?>"></td>
-          </tr>
-          <?php } ?>
-          </table>
-          </div>
-          <div class="main">
-          <h4><span>工場</span></h4>
-          <table class="ggp_game_table">
-          <tr><th style="width:10%;">名称</th><th style="width:20%;">説明</th><th style="width:10%;">画像ファイル名</th><th style="width:10%;">キー値</th><th style="width:5%;">必要金額[万円]</th><th style="width:5%;">米の量[トン]</th><th style="width:5%;">CO2排出量[kg]</th><th style="width:5%;">必要ターン数</th><th style="width:2%;">表示</th><th style="width:2%;">有効</th></tr>
-          <?php
-          for($i = 0; $i < count($ggp_cardinfo['make']); $i++){ ?>
-          <tr>
-          <td><input type="text" id="ggp_cardinfo[make][<?php echo $i; ?>][name]" name="ggp_cardinfo[make][<?php echo $i; ?>][name]" value="<?php echo $ggp_cardinfo['make'][$i]['name']; ?>" style="width:100%;"></td>
-          <td><input type="text" id="ggp_cardinfo[make][<?php echo $i; ?>][description]" name="ggp_cardinfo[make][<?php echo $i; ?>][description]" value="<?php echo $ggp_cardinfo['make'][$i]['description']; ?>" style="width:100%;"></td>
-          <td><input type="text" id="ggp_cardinfo[make][<?php echo $i; ?>][url]" name="ggp_cardinfo[make][<?php echo $i; ?>][url]" value="<?php echo $ggp_cardinfo['make'][$i]['url']; ?>" style="width:100%;"></td>
-          <td><input type="text" id="ggp_cardinfo[make][<?php echo $i; ?>][key]" name="ggp_cardinfo[make][<?php echo $i; ?>][key]" value="<?php echo $ggp_cardinfo['make'][$i]['key']; ?>" style="width:100%;"></td>
-          <td><input type="text" id="ggp_cardinfo[make][<?php echo $i; ?>][money]" name="ggp_cardinfo[make][<?php echo $i; ?>][money]" value="<?php echo $ggp_cardinfo['make'][$i]['money']; ?>" style="width:100%;"></td>
-          <td><input type="text" id="ggp_cardinfo[make][<?php echo $i; ?>][rice]" name="ggp_cardinfo[make][<?php echo $i; ?>][rice]" value="<?php echo $ggp_cardinfo['make'][$i]['rice']; ?>" style="width:100%;"></td>
-          <td><input type="text" id="ggp_cardinfo[make][<?php echo $i; ?>][co2]" name="ggp_cardinfo[make][<?php echo $i; ?>][co2]" value="<?php echo $ggp_cardinfo['make'][$i]['co2']; ?>" style="width:100%;"></td>
-          <td><input type="text" id="ggp_cardinfo[make][<?php echo $i; ?>][turn]" name="ggp_cardinfo[make][<?php echo $i; ?>][turn]" value="<?php echo $ggp_cardinfo['make'][$i]['turn']; ?>" style="width:100%;"></td>
-          <td style="text-align:center;"><input type="checkbox" id="ggp_cardinfo[make][<?php echo $i; ?>][is_visible]" name="ggp_cardinfo[make][<?php echo $i; ?>][is_visible]" value="1" <?php checked(1, $ggp_cardinfo['make'][$i]['is_visible']); ?>"></td>
-          <td style="text-align:center;"><input type="checkbox" id="ggp_cardinfo[make][<?php echo $i; ?>][is_valid]" name="ggp_cardinfo[make][<?php echo $i; ?>][is_valid]" value="1" <?php checked(1, $ggp_cardinfo['make'][$i]['is_valid']); ?>"></td>
-          </tr>
-          <?php } ?>
-          </table>
-          </div>
-          <div class="main">
-          <h4><span>運搬（工場からお店）</span></h4>
-          <table class="ggp_game_table">
-          <tr><th style="width:10%;">名称</th><th style="width:20%;">説明</th><th style="width:10%;">画像ファイル名</th><th style="width:10%;">キー値</th><th style="width:5%;">必要金額[万円]</th><th style="width:5%;">米の量[トン]</th><th style="width:5%;">CO2排出量[kg]</th><th style="width:5%;">必要ターン数</th><th style="width:2%;">表示</th><th style="width:2%;">有効</th></tr>
-          <?php
-          for($i = 0; $i < count($ggp_cardinfo['to_store']); $i++){ ?>
-          <tr>
-          <td><input type="text" id="ggp_cardinfo[to_store][<?php echo $i; ?>][name]" name="ggp_cardinfo[to_store][<?php echo $i; ?>][name]" value="<?php echo $ggp_cardinfo['to_store'][$i]['name']; ?>" style="width:100%;"></td>
-          <td><input type="text" id="ggp_cardinfo[to_store][<?php echo $i; ?>][description]" name="ggp_cardinfo[to_store][<?php echo $i; ?>][description]" value="<?php echo $ggp_cardinfo['to_store'][$i]['description']; ?>" style="width:100%;"></td>
-          <td><input type="text" id="ggp_cardinfo[to_store][<?php echo $i; ?>][url]" name="ggp_cardinfo[to_store][<?php echo $i; ?>][url]" value="<?php echo $ggp_cardinfo['to_store'][$i]['url']; ?>" style="width:100%;"></td>
-          <td><input type="text" id="ggp_cardinfo[to_store][<?php echo $i; ?>][key]" name="ggp_cardinfo[to_store][<?php echo $i; ?>][key]" value="<?php echo $ggp_cardinfo['to_store'][$i]['key']; ?>" style="width:100%;"></td>
-          <td><input type="text" id="ggp_cardinfo[to_store][<?php echo $i; ?>][money]" name="ggp_cardinfo[to_store][<?php echo $i; ?>][money]" value="<?php echo $ggp_cardinfo['to_store'][$i]['money']; ?>" style="width:100%;"></td>
-          <td><input type="text" id="ggp_cardinfo[to_store][<?php echo $i; ?>][rice]" name="ggp_cardinfo[to_store][<?php echo $i; ?>][rice]" value="<?php echo $ggp_cardinfo['to_store'][$i]['rice']; ?>" style="width:100%;"></td>
-          <td><input type="text" id="ggp_cardinfo[to_store][<?php echo $i; ?>][co2]" name="ggp_cardinfo[to_store][<?php echo $i; ?>][co2]" value="<?php echo $ggp_cardinfo['to_store'][$i]['co2']; ?>" style="width:100%;"></td>
-          <td><input type="text" id="ggp_cardinfo[to_store][<?php echo $i; ?>][turn]" name="ggp_cardinfo[to_store][<?php echo $i; ?>][turn]" value="<?php echo $ggp_cardinfo['to_store'][$i]['turn']; ?>" style="width:100%;"></td>
-          <td style="text-align:center;"><input type="checkbox" id="ggp_cardinfo[to_store][<?php echo $i; ?>][is_visible]" name="ggp_cardinfo[to_store][<?php echo $i; ?>][is_visible]" value="1" <?php checked(1, $ggp_cardinfo['to_store'][$i]['is_visible']); ?>"></td>
-          <td style="text-align:center;"><input type="checkbox" id="ggp_cardinfo[to_store][<?php echo $i; ?>][is_valid]" name="ggp_cardinfo[to_store][<?php echo $i; ?>][is_valid]" value="1" <?php checked(1, $ggp_cardinfo['to_store'][$i]['is_valid']); ?>"></td>
-          </tr>
-          <?php } ?>
-          </table>
-          </div>
-          <div class="main">
-          <h4><span>環境対策</span></h4>
-          <p><input type="checkbox" id="ggp_reduction_valid" name="ggp_reduction_valid" value="1" <?php checked(1, $ggp_reduction_valid); ?>>&nbsp;表示（チェックをつけると表示）</p>
-          <table class="ggp_game_table">
-          <tr><th style="width:10%;">名称</th><th style="width:20%;">説明</th><th style="width:10%;">画像ファイル名</th><th style="width:10%;">キー値</th><th style="width:5%;">必要金額[万円]</th><th style="width:5%;">米の量[トン]</th><th style="width:5%;">CO2排出量[kg]</th><th style="width:5%;">必要ターン数</th><th style="width:2%;">表示</th><th style="width:2%;">有効</th></tr>
-          <?php
-          for($i = 0; $i < count($ggp_cardinfo['reduction']); $i++){ ?>
-          <tr>
-          <td><input type="text" id="ggp_cardinfo[reduction][<?php echo $i; ?>][name]" name="ggp_cardinfo[reduction][<?php echo $i; ?>][name]" value="<?php echo $ggp_cardinfo['reduction'][$i]['name']; ?>" style="width:100%;"></td>
-          <td><input type="text" id="ggp_cardinfo[reduction][<?php echo $i; ?>][description]" name="ggp_cardinfo[reduction][<?php echo $i; ?>][description]" value="<?php echo $ggp_cardinfo['reduction'][$i]['description']; ?>" style="width:100%;"></td>
-          <td><input type="text" id="ggp_cardinfo[reduction][<?php echo $i; ?>][url]" name="ggp_cardinfo[reduction][<?php echo $i; ?>][url]" value="<?php echo $ggp_cardinfo['reduction'][$i]['url']; ?>" style="width:100%;"></td>
-          <td><input type="text" id="ggp_cardinfo[reduction][<?php echo $i; ?>][key]" name="ggp_cardinfo[reduction][<?php echo $i; ?>][key]" value="<?php echo $ggp_cardinfo['reduction'][$i]['key']; ?>" style="width:100%;"></td>
-          <td><input type="text" id="ggp_cardinfo[reduction][<?php echo $i; ?>][money]" name="ggp_cardinfo[reduction][<?php echo $i; ?>][money]" value="<?php echo $ggp_cardinfo['reduction'][$i]['money']; ?>" style="width:100%;"></td>
-          <td><input type="text" id="ggp_cardinfo[reduction][<?php echo $i; ?>][rice]" name="ggp_cardinfo[reduction][<?php echo $i; ?>][rice]" value="<?php echo $ggp_cardinfo['reduction'][$i]['rice']; ?>" style="width:100%;" disabled></td>
-          <td><input type="text" id="ggp_cardinfo[reduction][<?php echo $i; ?>][co2]" name="ggp_cardinfo[reduction][<?php echo $i; ?>][co2]" value="<?php echo $ggp_cardinfo['reduction'][$i]['co2']; ?>" style="width:100%;"></td>
-          <td><input type="text" id="ggp_cardinfo[reduction][<?php echo $i; ?>][turn]" name="ggp_cardinfo[reduction][<?php echo $i; ?>][turn]" value="<?php echo $ggp_cardinfo['reduction'][$i]['turn']; ?>" style="width:100%;"></td>
-          <td style="text-align:center;"><input type="checkbox" id="ggp_cardinfo[reduction][<?php echo $i; ?>][is_visible]" name="ggp_cardinfo[reduction][<?php echo $i; ?>][is_visible]" value="1" <?php checked(1, $ggp_cardinfo['reduction'][$i]['is_visible']); ?>"></td>
-          <td style="text-align:center;"><input type="checkbox" id="ggp_cardinfo[reduction][<?php echo $i; ?>][is_valid]" name="ggp_cardinfo[reduction][<?php echo $i; ?>][is_valid]" value="1" <?php checked(1, $ggp_cardinfo['reduction'][$i]['is_valid']); ?>"></td>
-          </tr>
-          <?php } ?>
-          </table>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="metabox-holder">
-      <div class="postbox">
-        <h3 class="hndle"><span>表示メッセージ設定</span></h3>
-        <div class="inside">
-          <div class="main">
+      </div> <!-- main -->
+    </div>   <!-- inside -->
+    <h3 class="hndle section"><span>表示メッセージ設定</span></h3>
+      <div class="inside">
+        <div class="main">
           <h4>各フェーズの表示文字列</h4>
           <table>
           <tr><th>キー値</th><th>表示文字列</th></tr>
@@ -341,13 +261,61 @@ for($tree_card_no = 0; $tree_card_no < count($ggp_cardinfo['reduction']); $tree_
           <tr><td><input type="text" readonly value="<?=$iterator ?>"></td><td><input type="text" id="ggp_msg_array[<?=$iterator ?>]" name="ggp_msg_array[<?=$iterator ?>]" value="<?=$ggp_msg_array[$iterator] ?>" style="width:300px;"></td></tr>
           <?php } ?>
           </table>
-          </div>
-        </div>
-      </div>
-    </div>
-    <?php submit_button(); ?>
+      </div> <!-- main -->
+    </div>   <!-- inside -->
+    <h3 class="hndle section"><span>変更を保存</span></h3>
+    <div class="inside">
+      <div class="main">
+        <?php submit_button(); ?>
+      </div> <!-- main -->
+    </div>   <!-- inside -->
+  </div>     <!-- postbox -->
   </form>
-</div>
+  </div>     <!-- metabox-holder -->
+</div> <!-- wrap -->
+<div class="wrap">
+  <h2>カード設定</h2>
+  <div class="metabox-holder">
+  <form method="post" action="">
+    <div class="postbox">
+    <div class="inside">
+    <div class="main">
+    <?php 
+      for($i = 0; $i < count($ggp_cardinfo_db); $i++){
+      if($i == 0){ ?>
+        <h4><span><?=$ggp_phase_name[$ggp_cardinfo_db[$i]->phase] ?></span></h4>
+        <table class="ggp_game_table">
+        <tr><th style="width:10%;">名称</th><th style="width:20%;">説明</th><th style="width:10%;">画像ファイル名</th><th style="width:10%;">キーワード</th><th style="width:5%;">必要金額[万円]</th><th style="width:5%;">米の量[トン]</th><th style="width:5%;">CO2排出量[kg]</th><th style="width:5%;">必要ターン数</th><th style="width:2%;">表示</th><th style="width:2%;">有効</th></tr>
+      <?php }else if($ggp_cardinfo_db[$i-1]->phase != $ggp_cardinfo_db[$i]->phase){ ?>
+        <h4><span><?=$ggp_phase_name[$ggp_cardinfo_db[$i]->phase] ?></span></h4>
+        <table class="ggp_game_table">
+        <tr><th style="width:10%;">名称</th><th style="width:20%;">説明</th><th style="width:10%;">画像ファイル名</th><th style="width:10%;">キーワード</th><th style="width:5%;">必要金額[万円]</th><th style="width:5%;">米の量[トン]</th><th style="width:5%;">CO2排出量[kg]</th><th style="width:5%;">必要ターン数</th><th style="width:2%;">表示</th><th style="width:2%;">有効</th></tr>
+      <?php } ?>
+
+      <tr>
+      <input type="hidden" id="ggp_cardinfo_db[<?=$i ?>][phase]" name="ggp_cardinfo_db[<?=$i ?>][phase]" value="<?=$ggp_cardinfo_db[$i]->phase ?>">
+      <td><input type="text" id="ggp_cardinfo_db[<?=$i ?>][name]" name="ggp_cardinfo_db[<?=$i ?>][name]" value="<?=$ggp_cardinfo_db[$i]->name ?>" style="width:100%;"></td>
+      <td><input type="text" id="ggp_cardinfo_db[<?=$i ?>][description]" name="ggp_cardinfo_db[<?=$i ?>][description]" value="<?=$ggp_cardinfo_db[$i]->description ?>" style="width:100%;"></td>
+      <td><input type="text" id="ggp_cardinfo_db[<?=$i ?>][url]" name="ggp_cardinfo_db[<?=$i ?>][url]" value="<?=$ggp_cardinfo_db[$i]->url ?>" style="width:100%;"></td>
+      <td><input type="text" id="ggp_cardinfo_db[<?=$i ?>][keyword]" name="ggp_cardinfo_db[<?=$i ?>][keyword]" value="<?=$ggp_cardinfo_db[$i]->keyword ?>" style="width:100%;"></td>
+      <td><input type="text" id="ggp_cardinfo_db[<?=$i ?>][money]" name="ggp_cardinfo_db[<?=$i ?>][money]" value="<?=$ggp_cardinfo_db[$i]->money ?>" style="width:100%;"></td>
+      <td><input type="text" id="ggp_cardinfo_db[<?=$i ?>][rice]" name="ggp_cardinfo_db[<?=$i; ?>][rice]" value="<?=$ggp_cardinfo_db[$i]->rice ?>" style="width:100%;"></td>
+      <td><input type="text" id="ggp_cardinfo_db[<?=$i ?>][co2]" name="ggp_cardinfo_db[<?=$i ?>][co2]" value="<?=$ggp_cardinfo_db[$i]->co2 ?>" style="width:100%;"></td>
+      <td><input type="text" id="ggp_cardinfo_db[<?=$i ?>][turn]" name="ggp_cardinfo_db[<?=$i ?>][turn]" value="<?=$ggp_cardinfo_db[$i]->turn ?>" style="width:100%;"></td>
+      <td style="text-align:center;"><input type="checkbox" id="ggp_cardinfo_db[<?=$i ?>][is_visible]" name="ggp_cardinfo_db[<?=$i ?>][is_visible]" value="1" <?php checked(1, $ggp_cardinfo_db[$i]->is_visible); ?>></td>
+      <td style="text-align:center;"><input type="checkbox" id="ggp_cardinfo_db[<?=$i ?>][is_valid]" name="ggp_cardinfo_db[<?=$i ?>][is_valid]" value="1" <?php checked(1, $ggp_cardinfo_db[$i]->is_valid); ?>></td>
+      </tr>
+      <?php if($i == count($ggp_cardinfo_db) - 1 || $ggp_cardinfo_db[$i]->phase != $ggp_cardinfo_db[$i+1]->phase){ ?>
+        </table>
+  <?php }
+      }
+            submit_button(); ?>
+      </div> <!-- main -->
+    </div>   <!-- inside -->
+  </div>     <!-- postbox -->
+  </form>
+  </div>  <!-- metabox-holder -->
+</div> <!-- wrap -->
 <?php
 }
 
@@ -361,8 +329,7 @@ function register_ggp_team_setup(){
 ****************************************************************/
 // チーム設定管理画面の出力
 function add_ggp_team_setup(){
-define('TABLE_NAME_GGP_TEAM',  $wpdb->prefix . 'ggp_team');
-define('TABLE_NAME_GGP_EARTH',  $wpdb->prefix . 'ggp_earth');
+global $wpdb;
 
 $is_reset = $_POST['reset'];
 $earth_no = $_POST['earth_no'];
@@ -504,6 +471,7 @@ $ggp_action_tree = get_db_table_records(TABLE_NAME_GGP_ACTION_TREE,'');
 $earth_no = $_POST['earth_no'];
 $team_no = $_POST['team_no'];
 $auto_reload = $_POST['auto_reload'];
+$ggp_phase_name = get_option('ggp_phase_name');
 
 if($earth_no == "")$earth_no = 0;
 if($team_no == "")$team_no = 0;
@@ -550,8 +518,7 @@ $ggp_action = get_db_table_ggp_action($earth_no, $team_no);
           <tr><td></td><td>各チームのCO2排出上限</td><td><?php echo get_option('ggp_init_quota_co2_perteam'); ?>kg/チーム</td></tr>
           <tr><td></td><td>売上設定（５トン毎）</td><td><?php echo get_option('ggp_init_sales'); ?>万円</td></tr>
           <tr><td></td><td>ゲームオーバー機能</td><td><?php if(get_option('ggp_init_co2_gameover') != NULL){ echo '<font color="blue">有効(ゲームオーバー有り)</font>'; } else { echo '<font color="red">無効（ゲームオーバーなし）</font>'; } ?></td></tr>
-          <tr><td>イベント設定</td><td>環境対策カード</td><td><?php if(get_option('ggp_reduction_valid') == "1"){ echo '<font color="blue">表示</font>'; } else { echo '<font color="red">非表示</font>'; } ?></td></tr>
-          <tr><td></td><td>植樹効果２倍</td><td><?php if(get_option('ggp_event_tree') == "1"){ echo '<font color="blue">有効</font>'; } else { echo '<font color="red">無効</font>'; } ?></td></tr>
+          <tr><td>イベント設定</td><td>植樹効果２倍</td><td><?php if(get_option('ggp_event_tree') == "1"){ echo '<font color="blue">有効</font>'; } else { echo '<font color="red">無効</font>'; } ?></td></tr>
           <tr><td></td><td>売り上げ倍増</td><td><?php if(get_option('ggp_event_sales') == "1"){ echo '<font color="blue">有効</font>'; } else { echo '<font color="red">無効</font>'; } ?></td></tr>
 
           </table>
@@ -598,7 +565,7 @@ $ggp_action = get_db_table_ggp_action($earth_no, $team_no);
             <?php for ($i = 0 ; $i < count($ggp_action); $i++){ ?>
             <tr>
             <td><?php echo ($ggp_action[$i]->require_turn == 0 ? "-" : $ggp_action[$i]->turn); ?></td>
-            <td style="text-align:left !important;"><img class="icon-action" src="/wp-content/uploads/<?=$ggp_action[$i]->url ?>"><?php echo $phase_name[$ggp_action[$i]->phase].'('.$ggp_action[$i]->cardname.')'; ?></td>
+            <td style="text-align:left !important;"><img class="icon-action" src="/wp-content/uploads/<?=$ggp_action[$i]->url ?>"><?php echo $ggp_phase_name[$ggp_action[$i]->phase].'('.$ggp_action[$i]->cardname.')'; ?></td>
             <td><?php echo $ggp_action[$i]->money; ?>万円</td>
             <td><?php echo $ggp_action[$i]->co2; ?>kg</td>
             <td><?php echo $ggp_action[$i]->require_turn; ?>ターン</td>
@@ -639,12 +606,13 @@ function register_ggp_rollback(){
 
 //ロールバックの実行画面を出力
 function add_ggp_rollback(){
-define('TABLE_NAME_GGP_TEAM',  $wpdb->prefix . 'ggp_team');
-define('TABLE_NAME_GGP_EARTH',  $wpdb->prefix . 'ggp_earth');
+//define('TABLE_NAME_GGP_TEAM',  $wpdb->prefix . 'ggp_team');
+//define('TABLE_NAME_GGP_EARTH',  $wpdb->prefix . 'ggp_earth');
 $ggp_init_perteam = get_option('ggp_init_perteam');
 $mode = $_POST['mode'];
 $earth_no = $_POST['earth_no'];
 $team_no = $_POST['team_no'];
+$ggp_phase_name = get_option('ggp_phase_name');
 
 // ロールバックが実行された場合の処理
 if($mode == "rollback"){
@@ -745,7 +713,7 @@ $ggp_action = get_db_table_ggp_action($earth_no, $team_no);
             <?php for ($i = 0 ; $i < count($ggp_action); $i++){ ?>
             <tr>
             <td><?php echo ($ggp_action[$i]->require_turn == 0 ? "-" : $ggp_action[$i]->turn); ?></td>
-            <td style="text-align:left !important;"><img class="icon-action" src="/wp-content/uploads/<?=$ggp_action[$i]->url ?>"><?php echo $phase_name[$ggp_action[$i]->phase].'('.$ggp_action[$i]->cardname.')'; ?></td>
+            <td style="text-align:left !important;"><img class="icon-action" src="/wp-content/uploads/<?=$ggp_action[$i]->url ?>"><?php echo $ggp_phase_name[$ggp_action[$i]->phase].'('.$ggp_action[$i]->cardname.')'; ?></td>
             <td><?php echo $ggp_action[$i]->money; ?>万円</td>
             <td><?php echo $ggp_action[$i]->co2; ?>kg</td>
             <td><?php echo $ggp_action[$i]->require_turn; ?>ターン</td>
