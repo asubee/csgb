@@ -32,7 +32,7 @@ function err() {
   status=$?
   lineno=$1
   func_name=${2:-main}
-  err_str="ERROR: [`date +'%Y-%m-%d %H:%M:%S'`] ${SCRIPT}:${func_name}() returned non-zero exit status ${status} at line ${lineno}"
+  err_str="ERROR: [`TZ=JST-9 date +'%Y-%m-%d %H:%M:%S'` JST] ${SCRIPT}:${func_name}() returned non-zero exit status ${status} at line ${lineno}"
   echo ${err_str}
   err_buf+=${err_str}
 }
@@ -57,7 +57,7 @@ trap finally EXIT
 sudo cp -r ${GGP_VOLUME_DIR} ${GIT_REPOSITORY} 2>&1
 cd ${GIT_REPOSITORY}
 git add -A ${GIT_REPOSITORY}/* 2>&1
-git commit -m "backup :`date "+%Y%m%d_%H%M%S"`" 2>&1
+git commit -m "backup :`TZ=JST-9 date "+%Y%m%d_%H%M%S"` JST" 2>&1
 git push 2>&1
 
 ################################################################################
@@ -68,5 +68,5 @@ git push 2>&1
 set -e
 
 # 進捗をファイルに出力しておく（終了）
-echo "`date +'%Y-%m-%d %H:%M:%S'` Finished." | tee -a .//execute.log
+echo "`date +'TZ=JST-9 %Y-%m-%d %H:%M:%S'` JST Finished." | tee -a $HOME/csgb_backup_execute.log
 
