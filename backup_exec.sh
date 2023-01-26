@@ -68,5 +68,5 @@ git push 2>&1
 set -e
 
 # 進捗をファイルに出力しておく（終了）
-echo "`date +'%Y-%m-%d %H:%M:%S'` Finished." | tee -a ${USB_MNT_PATH}/execute.log
+echo "`date +'%Y-%m-%d %H:%M:%S'` Finished." | tee -a .//execute.log
 
