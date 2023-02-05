@@ -67,6 +67,10 @@ table.action_table th {
   padding: 10px;
 }
 
+table.setup_parameter tr {
+  height: 2.5em;
+}
+
 .icon-action {
   width:30px;
 }

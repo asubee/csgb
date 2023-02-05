@@ -177,6 +177,7 @@ function check_event_arise($earth_no, $num_sales_activity){
   $records = $wpdb->get_results( $query );
   $ggp_init_event_tree = get_option('ggp_event_tree');
   $ggp_init_event_sales = get_option('ggp_event_sales');
+  $ggp_quota_turn = get_option('ggp_quota_turn');
 
   if($num_sales_activity == "1"){
     if($ggp_init_event_tree == NULL) return "";
@@ -251,25 +252,28 @@ function update_table_ggp_earth_event_card_count($earth_no, $count){
 endif;
 
 
-/****************************************************************
+/***********************************************************************************************
 * テーブル名：wp_ggp_team
 * 役割：チーム設定の保持
 *
 * <<テーブル情報>>
-* *地球番号             earth_no                  int         チームを表す通し番号
-* *チーム番号           team_no                   int         チーム番号
-* チーム名              teamname                  varchar(50) チーム名
-* チームの目標          team_objective            varchar(50) チームの目標
-* 現在のターン          turn                      int         初期値は1
-* お金                  money                     int
-* Co2排出量             co2                       int
-* クリーンな電力を使用  event_valid_clean_energy  int         0ならfalse, 1ならtrue
-* 直売所併設            event_valid_direct_store  int         0ならfalse, 1ならtrue
-* 人気が出て売り上げUp  event_valid_popularity    int         0ならfalse, 1ならtrue
-* 不祥事で売り上げDown  event_valid_scandal       int         0ならfalse, 1ならtrue
-* 環境によい取り組みで売り上げUp event_valid_protect  int     0ならfalse, 1ならtrue
-* 投票ランキング        score                     int         投票数
-*****************************************************************/
+* *地球番号                       earth_no                  int         チームを表す通し番号
+* *チーム番号                     team_no                   int         チーム番号
+* チーム名                        teamname                  varchar(50) チーム名
+* チームの目標                    team_objective            varchar(50) チームの目標
+* 現在のターン                    turn                      int         初期値は1
+* お金                            money                     int
+* Co2排出量                       co2                       int
+* クリーンな電力を使用            event_valid_clean_energy  int         0ならfalse, 1ならtrue
+* 直売所併設                      event_valid_direct_store  int         0ならfalse, 1ならtrue
+* 人気が出て売り上げUp            event_valid_popularity    int         0ならfalse, 1ならtrue
+* 不祥事で売り上げDown            event_valid_scandal       int         0ならfalse, 1ならtrue
+* 環境によい取り組みで売り上げUp  event_valid_protect       int     0ならfalse, 1ならtrue
+* ソーラーパネルを設置            other_valid_solar_panel   int         0ならfalse, 1ならtrue
+* 工場のクリーンエネルギー宣言    other_valid_clean_energy  int         0ならfalse, 1ならtrue
+* CMを打つ                        other_valid_cm            int         0ならfalse, 1ならtrue
+* 投票ランキング                  score                     int         投票数
+***********************************************************************************************/
 if( !function_exists( 'create_table_ggp_team' ) ):
 function create_table_ggp_team() {
   if (is_db_table_exist(TABLE_NAME_GGP_TEAM) ){
@@ -291,6 +295,9 @@ function create_table_ggp_team() {
           event_valid_popularity int,
           event_valid_scandal int,
           event_valid_protect int,
+          other_valid_solar_panel int,
+          other_valid_clean_energy int,
+          other_valid_cm int,
           score int,
           PRIMARY KEY(earth_no, team_no)
           );";
@@ -328,6 +335,9 @@ function reset_table_ggp_team(){
       'event_valid_popularity' => 0,
       'event_valid_scandal' => 0,
       'event_valid_protect' => 0,
+      'other_valid_solar_panel' => 0,
+      'other_valid_clean_energy' => 0,
+      'other_valid_cm' => 0,
       'score' => 0
     );
 
@@ -337,6 +347,9 @@ function reset_table_ggp_team(){
       '%d',
       '%s',
       '%s',
+      '%d',
+      '%d',
+      '%d',
       '%d',
       '%d',
       '%d',
@@ -378,6 +391,9 @@ function reset_table_ggp_team_transaction(){
       'event_valid_popularity' => 0,
       'event_valid_scandal' => 0,
       'event_valid_protect' => 0,
+      'other_valid_solar_panel' => 0,
+      'other_valid_clean_energy' => 0,
+      'other_valid_cm' => 0,
       'score' => 0
     );
 
@@ -387,6 +403,9 @@ function reset_table_ggp_team_transaction(){
     );
 
     $format = array(
+      '%d',
+      '%d',
+      '%d',
       '%d',
       '%d',
       '%d',
@@ -708,6 +727,44 @@ function update_table_ggp_team_objective($earth_no, $team_no, $team_objective){
 }
 endif;
 
+if(! function_exists( 'update_table_ggp_team_other_solar_panel' ) ):
+function update_table_ggp_team_other_solar_panel($earth_no, $team_no, $is_valid){
+  $table = TABLE_NAME_GGP_TEAM;
+  $data  = array('other_valid_solar_panel' => $is_valid);
+  $where = array('earth_no' => $earth_no, 'team_no' => $team_no);
+  $format = array('%d');
+  $where_format = array('%d','%d');
+
+  return update_db_table_record($table, $data, $where, $format, $where_format);
+
+}
+endif;
+
+if(! function_exists( 'update_table_ggp_team_other_clean_energy' ) ):
+function update_table_ggp_team_other_clean_energy($earth_no, $team_no, $is_valid){
+  $table = TABLE_NAME_GGP_TEAM;
+  $data  = array('other_valid_clean_energy' => $is_valid);
+  $where = array('earth_no' => $earth_no, 'team_no' => $team_no);
+  $format = array('%d');
+  $where_format = array('%d','%d');
+
+  return update_db_table_record($table, $data, $where, $format, $where_format);
+
+}
+endif;
+
+if(! function_exists( 'update_table_ggp_team_other_cm' ) ):
+function update_table_ggp_team_other_cm($earth_no, $team_no, $is_valid){
+  $table = TABLE_NAME_GGP_TEAM;
+  $data  = array('other_valid_cm' => $is_valid);
+  $where = array('earth_no' => $earth_no, 'team_no' => $team_no);
+  $format = array('%d');
+  $where_format = array('%d','%d');
+
+  return update_db_table_record($table, $data, $where, $format, $where_format);
+
+}
+endif;
 
 /****************************************************************
 * テーブル名：wp_ggp_action
@@ -854,8 +911,7 @@ function check_co2_over($earth_no, $team_no, $phase, $card_no){
   $ggp_earth = get_db_table_records_ggp(TABLE_NAME_GGP_EARTH,"earth_no",$earth_no);
   $ggp_team = get_db_table_records_ggp(TABLE_NAME_GGP_TEAM,"earth_no",$earth_no);
   $reduction_quantity_tree = (int)(get_table_ggp_action_tree($earth_no, $team_no))[0]->reduction_co2;
-//  $ggp_cardinfo = get_option('ggp_cardinfo');
-  $ggp_cardinfo = get_table_ggp_cardinfo_nested();
+  $ggp_cardinfo = get_table_ggp_cardinfo_instance_nested($earth_no, $team_no);
 
   if($phase == 'reduction'){
     return false;
@@ -1028,7 +1084,8 @@ function create_table_ggp_message() {
   $sql = "CREATE TABLE " .TABLE_NAME_GGP_MESSAGE." (
           id int AUTO_INCREMENT NOT NULL PRIMARY KEY,
           earth_no int,
-          msg varchar(200)
+          msg varchar(200),
+          important int
           );";
   $res = create_db_table($sql);
   return $res;
@@ -1044,12 +1101,13 @@ function reset_table_ggp_message(){
 endif;
 
 if( !function_exists(' insert_table_ggp_message' ) ):
-function insert_table_ggp_message($earth_no, $msg){
+function insert_table_ggp_message($earth_no, $msg, $important = 0){
   $table = TABLE_NAME_GGP_MESSAGE;
   $data = array('earth_no'=>$earth_no,
-                'msg'=>$msg
+                'msg'=>$msg,
+                'important'=>$important
                 );
-  $format = array('%d','%s');
+  $format = array('%d','%s', '%d');
   return insert_db_table_record($table, $data, $format);
 
 }
@@ -1276,8 +1334,10 @@ if( !function_exists( 'event_count_car_truck' ) ):
 function event_count_car_truck($earth_no, $team_no) {
   global $wpdb;
   $table = TABLE_NAME_GGP_ACTION;
-  $query = $wpdb->prepare('SELECT count(id) as count from '. $table . ' WHERE keyword = %s AND earth_no = %d AND team_no = %d','car_truck',$earth_no, $team_no);
+  $query = $wpdb->prepare("SELECT count(id) as count from ". $table . " WHERE keyword in ('%s', '%s') AND earth_no = %d AND team_no = %d",'car_truck','car_hybrid',$earth_no, $team_no);
   $result = $wpdb->get_results($query);
+  var_dump($result);
+  echo("Earth_no = " . $earth_no . " team_no = " . $team_no . " event_count = " . $result[0]->count);
   return $result;
 
 }
@@ -1579,6 +1639,68 @@ function reset_table_ggp_cardinfo_instance(){
   }
 }
 endif;
+
+if( !function_exists( 'update_table_ggp_cardinfo_instance_is_valid') ):
+function update_table_ggp_cardinfo_instance_is_valid($earth_no, $team_no, $keyword, $is_valid){
+  $table = TABLE_NAME_GGP_CARDINFO_INSTANCE;
+  $data = array('is_valid' => $is_valid);
+  $where = array('earth_no' => $earth_no, 'team_no' => $team_no, 'keyword' => $keyword);
+  $format = array('%d');
+  $where_format = array('%d','%d','%s');
+  return update_db_table_record($table, $data, $where, $format, $where_format);
+}
+endif;
+
+if( !function_exists( 'update_table_ggp_cardinfo_instance_is_visible') ):
+function update_table_ggp_cardinfo_instance_is_visible($earth_no, $team_no, $keyword, $is_visible){
+  $table = TABLE_NAME_GGP_CARDINFO_INSTANCE;
+  $data = array('is_valid' => $is_visible,'is_visible' => $is_visible);
+  $where = array('earth_no' => $earth_no, 'team_no' => $team_no, 'keyword' => $keyword);
+  $format = array('%d','%d');
+  $where_format = array('%d','%d','%s');
+  return update_db_table_record($table, $data, $where, $format, $where_format);
+}
+endif;
+
+
+if( !function_exists( 'update_table_ggp_cardinfo_instance_ev_collaboration') ):
+function update_table_ggp_cardinfo_instance_ev_collaboration($earth_no, $team_no){
+  $table = TABLE_NAME_GGP_CARDINFO_INSTANCE;
+  $data = array('money' => "0");
+  $where = array('earth_no' => $earth_no, 'team_no' => $team_no, 'keyword' => 'car_denki');
+  $format = array('%d');
+  $where_format = array('%d','%d','%s');
+  return update_db_table_record($table, $data, $where, $format, $where_format);
+
+}
+endif;
+
+if( !function_exists( 'update_table_ggp_cardinfo_instance_eco_package') ):
+function update_table_ggp_cardinfo_instance_eco_package($earth_no, $team_no){
+  $table = TABLE_NAME_GGP_CARDINFO_INSTANCE;
+  $ggp_cardinfo = get_table_ggp_cardinfo_instance($earth_no, $team_no);
+  $ggp_other_eco_package = get_option('ggp_other_eco_package');
+  foreach($ggp_cardinfo as $line){
+    if($line->phase == 'to_store'){
+      $data = array('co2' => $line->co2*(1+$ggp_other_eco_package));
+      $where = array('id' => $line->id, 'earth_no' => $earth_no, 'team_no'=>$team_no);
+      $format = array('%d');
+      $where_format = array('%d','%d','%d');
+      update_db_table_record($table, $data, $where, $format, $where_format);
+    }else{
+      continue;
+    }
+  }
+}
+endif;
+
+
+/****************************************************************
+* テーブル名：wp_ggp_options
+* 役割：Wordpressの管理オプション
+*
+*
+****************************************************************/
 
 if( !function_exists(' reset_parameter_ggp_event_preselect') ):
 function reset_parameter_ggp_event_preselect(){

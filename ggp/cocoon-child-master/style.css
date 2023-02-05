@@ -318,6 +318,17 @@ p.p-ggp-msg {
   cursor: pointer;
 }
 
+.close-btn-popup-warning {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 50px;
+  height: 50px;
+  line-height: 50px;
+  text-align: center;
+  cursor: pointer;
+}
+
 .icon {
   position:absolute;
   right: 5px;
@@ -371,6 +382,37 @@ div.popup_msg_area {
  transform: translateX(-50%);
  -webkit-transform: translateX(-50%);
  -ms-transform: translateX(-50%);
+}
+
+div.popup_msg_warning_area {
+  display: none;
+  position: fixed;
+  width: 100%;
+  height: 100vh;
+  top: 0%;
+  left: 50%;
+  z-index: 9999;
+  background: rgba(0,0,0,0.6);
+  transform: translateX(-50%);
+  -webkit-transform: translateX(-50%);
+  -ms-transform: translateX(-50%);
+}
+
+div.popup_msg_warning {
+  position: relative;
+  z-index: 9998;
+  top:20%;
+  left:50%;
+  margin: 5px 0px;
+  padding: 30px;
+  max-width: 1200px;
+  width: 100%;
+  background-color: #FFFFFF;
+  color: #000000;
+  border-radius: 5px;
+  -moz-border-radius: 5px;
+  min-height: 30px;
+  transform: translateX(-50%);
 }
 
 .canvasjs-chart-credit {

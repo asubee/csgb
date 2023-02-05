@@ -17,14 +17,14 @@ function get_ggp_event_list(){
         Array('key'=>'disaster','subject'=>'(1)台風で田んぼと工場がやられる','text'=>'台風で田んぼと倉庫がやられてしまいました。作ったお米やおせんべいの材料がゼロになる。','value'=>''),
         Array('key'=>'subsidy','subject'=>'(2)電気自動車を使った会社に補助金','text'=>'電気自動車を使った会社に補助金が出ることになった。電気自動車を使った回数&times;'. $ggp_event_subsidy . '万円をもらう。','value'=>$ggp_event_subsidy),
         Array('key'=>'tax','subject'=>'(3)ガソリン車を使った会社に税金','text'=>'ガソリン車を使った会社に税金がかかることになった。ガソリン車を使った回数&times;' . $ggp_event_tax . '万円を支払う。','value'=>$ggp_event_tax),
- //       Array('key'=>'emissions_trading','subject'=>'(4)CO2排出権取引','text'=>'二酸化炭素排出権を買う。'. $ggp_event_emission_trading . '万円を支払って排出量上限を200kg増やす。','value'=>200),
-        Array('key'=>'clean_energy','subject'=>'(5)クリーン電力を使用','text'=>'クリーンな電気でおせんべいを作ることにした。「おせんべいを作る」で選べるカードが少なくなる。'),
-        Array('key'=>'reduction_quota_co2', 'subject'=>'(6)Co2排出量上限の引き下げ','text'=>'二酸化炭素を少なくする約束をした。全体の排出量上限が-' . $ggp_event_reduction_quota_co2 .' kg少なくなる。', 'value'=>$ggp_event_reduction_quota_co2),
-        Array('key'=>'direct_store', 'subject'=>'(7)工場に直売所を設置','text'=>'工場に直売所を作った。おせんべいを作ると' . $ggp_event_direct_store .' 万円売り上げが増える。', 'value'=>$ggp_event_direct_store),
-        Array('key'=>'popularity', 'subject'=>'(8)人気が出て売り上げUp','text'=>'作ったおせんべいが人気急上昇！売り上げが' . $ggp_event_popularity*100 .' %アップする。', 'value'=>$ggp_event_popularity),
-        Array('key'=>'scandal', 'subject'=>'(9)虫が入っていて売り上げDown','text'=>'作ったおせんべいに虫が入っていた！売り上げが' . -$ggp_event_scandal*100 .' %ダウンする。', 'value'=>$ggp_event_scandal),
-        Array('key'=>'protect_environment_action', 'subject'=>'(10)環境に良い取組みに補助金','text'=>'環境によい取り組みをしている会社を支援する人が現れた。環境によい取り組み&times;10%売り上げアップ。','value'=>''),
-        Array('key'=>'restriction_gascars', 'subject'=>'(11)ガソリン車禁止','text'=>'環境に悪いガソリン車が使えなくなった。「お米を工場に運ぶ」「おせんべいを運んで売る」で選べるカードが少なくなる。','value'=>'')
+        Array('key'=>'clean_energy','subject'=>'(4)クリーン電力を使用','text'=>'クリーンな電気でおせんべいを作ることにした。「おせんべいを作る」で選べるカードが少なくなる。'),
+        Array('key'=>'reduction_quota_co2', 'subject'=>'(5)Co2排出量上限の引き下げ','text'=>'二酸化炭素を少なくする約束をした。全体の排出量上限が-' . $ggp_event_reduction_quota_co2 .' kg少なくなる。', 'value'=>$ggp_event_reduction_quota_co2),
+        Array('key'=>'direct_store', 'subject'=>'(6)工場に直売所を設置','text'=>'工場に直売所を作った。おせんべいを作ると' . $ggp_event_direct_store .' 万円売り上げが増える。', 'value'=>$ggp_event_direct_store),
+        Array('key'=>'popularity', 'subject'=>'(7)人気が出て売り上げUp','text'=>'作ったおせんべいが人気急上昇！売り上げが' . $ggp_event_popularity*100 .' %アップする。', 'value'=>$ggp_event_popularity),
+        Array('key'=>'scandal', 'subject'=>'(8)虫が入っていて売り上げDown','text'=>'作ったおせんべいに虫が入っていた！売り上げが' . -$ggp_event_scandal*100 .' %ダウンする。', 'value'=>$ggp_event_scandal),
+        Array('key'=>'protect_environment_action', 'subject'=>'(9)環境に良い取組みに補助金','text'=>'環境によい取り組みをしている会社を支援する人が現れた。環境によい取り組み&times;10%売り上げアップ。','value'=>''),
+        Array('key'=>'restriction_gascars', 'subject'=>'(10)ガソリン車禁止','text'=>'環境に悪いガソリン車が使えなくなった。「お米を工場に運ぶ」「おせんべいを運んで売る」で選べるカードが少なくなる。','value'=>'')
+ //       Array('key'=>'emissions_trading','subject'=>'(11)CO2排出権取引','text'=>'二酸化炭素排出権を買う。'. $ggp_event_emission_trading . '万円を支払って排出量上限を200kg増やす。','value'=>200),
         );
 
   return $ggp_event_list;
@@ -61,6 +61,8 @@ if( !function_exists( ' show_ggp_event' )):
     $ggp_event_protect_environment_action = get_option('ggp_event_protect_environment_action');
     $ggp_quota_co2 = $ggp_earth[0]->co2_quota;
     $error_msg = "";
+    $ggp_event_not_clean_energy = get_option("ggp_event_not_clean_energy");
+    $ggp_event_restriction_gascars = get_option("ggp_event_restriction_gascars");
 
     if($is_general == NULL)$is_general='disabled';
 
@@ -78,8 +80,7 @@ if( !function_exists( ' show_ggp_event' )):
       $error_msg .= "イベント回数が規定の数より多いです。イベント回数：" . $ggp_earth[0]->event_card_count + 1 . "回目";
       $select_no = "";
     }
-
-    if($select_no != "" && allow_insert_table_ggp_action($token) ){
+if($select_no != "" && allow_insert_table_ggp_action($token) ){
       $preselect = $ggp_event_preselect[$ggp_earth[0]->event_card_count];
 
       if($preselect != ""){
@@ -91,92 +92,105 @@ if( !function_exists( ' show_ggp_event' )):
       insert_table_ggp_message($earth_no,'【イベント】' . $ggp_event_list[$ggp_event_mode]['text']);
       switch( $ggp_event_list[$ggp_event_mode]['key'] ){
       case "disaster" :
+      //台風で田んぼと工場がやられる
           for($team_no = 0; $team_no < $ggp_init_perteam; $team_no++){
             event_disaster($earth_no, $team_no);
-            insert_table_ggp_action($token, $earth_no, $team_no, 'event' ,'','台風で田んぼと倉庫がやられてしまいました','blackbox_question_open.png','','',0,0,0);
-            update_table_ggp_earth_event_card_count($earth_no, $ggp_earth[0]->event_card_count + 1 );
-          }
-        break;
-      case "donation" :
-          for($team_no = 0; $team_no < $ggp_init_perteam; $team_no++){
-            update_table_ggp_team_transaction($earth_no, $team_no, 0, 500, 0);
-            insert_table_ggp_action($token, $earth_no, $team_no, 'event' ,'', '環境を大事にする団体へ寄付をしました','blackbox_question_open.png','',-500,0,0,0);
+            insert_table_ggp_action($token, $earth_no, $team_no, 'event' ,'',$ggp_event_list[$ggp_event_mode]['text'],'blackbox_question_open.png','','',0,0,0);
             update_table_ggp_earth_event_card_count($earth_no, $ggp_earth[0]->event_card_count + 1 );
           }
         break;
       case "subsidy" :
+      //電気自動車を使った会社に補助金
           for($team_no = 0; $team_no < $ggp_init_perteam; $team_no++){
             $count =  event_count_electric_car($earth_no, $team_no);
             $count = (int)$count[0]->count;
             update_table_ggp_team_transaction($earth_no, $team_no, 0, - ($count * $ggp_event_subsidy), 0);
-            insert_table_ggp_action($token, $earth_no, $team_no, 'event' ,'', '補助金を受け取りました（トラック（電気自動車）を使った回数&times;' .$ggp_event_subsidy . '万円）','blackbox_question_open.png','',$count * $ggp_event_subsidy,0,0,0);
+            insert_table_ggp_action($token, $earth_no, $team_no, 'event' ,'', $ggp_event_list[$ggp_event_mode]['text'] .$ggp_event_subsidy . '万円）','blackbox_question_open.png','',$count * $ggp_event_subsidy,0,0,0);
             update_table_ggp_earth_event_card_count($earth_no, $ggp_earth[0]->event_card_count + 1 );
           }
         break;
       case "tax" :
+      //ガソリン車を使った会社に税金
           for($team_no = 0; $team_no < $ggp_init_perteam; $team_no++){
-        $count =  event_count_car_truck($earth_no, $team_no);
-        $count = (int)$count[0]->count;
+            $count =  event_count_car_truck($earth_no, $team_no);
+            $count = (int)$count[0]->count;
+            echo("team_no = " . $team_no . " count = " . $count . " tax = " . $count * $ggp_event_tax);
             update_table_ggp_team_transaction($earth_no, $team_no, 0, $count * $ggp_event_tax, 0);
-            insert_table_ggp_action($token, $earth_no, $team_no, 'event' ,'','税金を支払いました（トラック（ガソリン）を使った回数&times;' . $ggp_event_tax.'万円）','blackbox_question_open.png','',-$count * $ggp_event_tax,0,0,0);
+            insert_table_ggp_action($token, $earth_no, $team_no, 'event' ,'',$ggp_event_list[$ggp_event_mode]['text'],'blackbox_question_open.png','',-$count * $ggp_event_tax,0,0,0);
             update_table_ggp_earth_event_card_count($earth_no, $ggp_earth[0]->event_card_count + 1 );
           }
         break;
       case "emissions_trading" :
+      //Co2排出権取引
           for($team_no = 0; $team_no < $ggp_init_perteam; $team_no++){
             update_table_ggp_team_transaction($earth_no, $team_no, 0, $ggp_event_emission_trading, 0);
-            insert_table_ggp_action($token, $earth_no, $team_no, 'event' ,'','環境対策をしました（二酸化炭素排出を買う）','blackbox_question_open.png','',-$ggp_event_emission_trading,0,0,0);
+            insert_table_ggp_action($token, $earth_no, $team_no, 'event' ,'',$ggp_event_list[$ggp_event_mode]['text'],'blackbox_question_open.png','',-$ggp_event_emission_trading,0,0,0);
             update_table_ggp_earth_quota($earth_no, $ggp_quota_co2 + 200);
             update_table_ggp_team_co2_quota($earth_no, $team_no, $ggp_team[$team_no]->co2_quota + 200);
             update_table_ggp_earth_event_card_count($earth_no, $ggp_earth[0]->event_card_count + 1 );
           }
         break;
       case "clean_energy" :
+      //クリーン電力を使用（工場）
           for($team_no = 0; $team_no < $ggp_init_perteam; $team_no++){
             update_table_ggp_event_clean_energy($earth_no, $team_no, 1);
-            insert_table_ggp_action($token, $earth_no, $team_no, 'event' ,'','クリーンな電気でおせんべいを作ることにした','blackbox_question_open.png','',0,0,0,0);
+            insert_table_ggp_action($token, $earth_no, $team_no, 'event' ,'',$ggp_event_list[$ggp_event_mode]['text'],'blackbox_question_open.png','',0,0,0,0);
             update_table_ggp_earth_event_card_count($earth_no, $ggp_earth[0]->event_card_count + 1 );
+            foreach($ggp_event_not_clean_energy as $line){
+              update_table_ggp_cardinfo_instance_is_valid($earth_no, $team_no, $line, NULL);
+            }
           }
         break;
       case "reduction_quota_co2" :
+      //Co2排出量上限の引き下げ
           for($team_no = 0; $team_no < $ggp_init_perteam; $team_no++){
             update_table_ggp_earth_quota($earth_no, $ggp_quota_co2 - $ggp_event_reduction_quota_co2);
-            insert_table_ggp_action($token, $earth_no, $team_no, 'event' ,'','二酸化炭素を少なくする約束をした','blackbox_question_open.png','',0,0,0,0);
+            insert_table_ggp_action($token, $earth_no, $team_no, 'event' ,'',$ggp_event_list[$ggp_event_mode]['text'],'blackbox_question_open.png','',0,0,0,0);
             update_table_ggp_earth_event_card_count($earth_no, $ggp_earth[0]->event_card_count + 1 );
           }
         break;
       case "direct_store" :
+      //工場に直売所を設置
           for($team_no = 0; $team_no < $ggp_init_perteam; $team_no++){
             update_table_ggp_event_direct_store($earth_no, $team_no, 1);
-            insert_table_ggp_action($token, $earth_no, $team_no, 'event' ,'','直売所を作った。','blackbox_question_open.png','',0,0,0,0);
+            insert_table_ggp_action($token, $earth_no, $team_no, 'event' ,'',$ggp_event_list[$ggp_event_mode]['text'],'blackbox_question_open.png','',0,0,0,0);
             update_table_ggp_earth_event_card_count($earth_no, $ggp_earth[0]->event_card_count + 1 );
+            update_table_ggp_cardinfo_instance_is_valid($earth_no, $team_no, "direct_store",NULL);
           }
         break;
       case "popularity" :
+      //人気が出て売り上げUP
           for($team_no = 0; $team_no < $ggp_init_perteam; $team_no++){
             update_table_ggp_event_popularity($earth_no, $team_no, 1);
-            insert_table_ggp_action($token, $earth_no, $team_no, 'event' ,'','おせんべいの人気があがった。売り上げが'.$ggp_event_popularity*100 . '%アップする。','blackbox_question_open.png','',0,0,0,0);
+            insert_table_ggp_action($token, $earth_no, $team_no, 'event' ,'',$ggp_event_list[$ggp_event_mode]['text'],'blackbox_question_open.png','',0,0,0,0);
             update_table_ggp_earth_event_card_count($earth_no, $ggp_earth[0]->event_card_count + 1 );
           }
        break;
       case "scandal" :
+      //虫が入っていて売り上げDown
           for($team_no = 0; $team_no < $ggp_init_perteam; $team_no++){
             update_table_ggp_event_scandal($earth_no, $team_no, 1);
-            insert_table_ggp_action($token, $earth_no, $team_no, 'event' ,'','おせんべいに虫が入っていた。売り上げが'.- $ggp_event_scandal*100 . '%ダウンする。','blackbox_question_open.png','',0,0,0,0);
+            insert_table_ggp_action($token, $earth_no, $team_no, 'event' ,'',$ggp_event_list[$ggp_event_mode]['text'],'blackbox_question_open.png','',0,0,0,0);
             update_table_ggp_earth_event_card_count($earth_no, $ggp_earth[0]->event_card_count + 1 );
           }
       break;
       case "protect_environment_action" :
+      //環境に良い取り組みに補助金
           for($team_no = 0; $team_no < $ggp_init_perteam; $team_no++){
             update_table_ggp_event_protect($earth_no, $team_no, 1);
-            insert_table_ggp_action($token, $earth_no, $team_no, 'event' ,'','環境によい取り組みを支援するお店が現れた。環境によい取り組み&times;10%売り上げがアップする。','blackbox_question_open.png','',0,0,0,0);
+            insert_table_ggp_action($token, $earth_no, $team_no, 'event' ,'',$ggp_event_list[$ggp_event_mode]['text'],'blackbox_question_open.png','',0,0,0,0);
             update_table_ggp_earth_event_card_count($earth_no, $ggp_earth[0]->event_card_count + 1 );
           }
       break;
       case "restriction_gascars" :
+      //ガソリン車禁止
           for($team_no = 0; $team_no < $ggp_init_perteam; $team_no++){
+            insert_table_ggp_action($token, $earth_no, $team_no, 'event' ,'',$ggp_event_list[$ggp_event_mode]['text'],'blackbox_question_open.png','',0,0,0,0);
             update_table_ggp_event_restriction_gascars($earth_no, $team_no, 1);
             update_table_ggp_earth_event_card_count($earth_no, $ggp_earth[0]->event_card_count + 1 );
+            foreach($ggp_event_restriction_gascars as $line){
+              update_table_ggp_cardinfo_instance_is_valid($earth_no, $team_no, $line, NULL);
+            }
           }
       break;
       default :
