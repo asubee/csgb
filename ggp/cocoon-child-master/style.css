@@ -329,6 +329,17 @@ p.p-ggp-msg {
   cursor: pointer;
 }
 
+.close_btn_popup_event {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 50px;
+  height: 50px;
+  line-height: 50px;
+  text-align: center;
+  cursor: pointer;
+}
+
 .icon {
   position:absolute;
   right: 5px;
@@ -413,6 +424,46 @@ div.popup_msg_warning {
   -moz-border-radius: 5px;
   min-height: 30px;
   transform: translateX(-50%);
+}
+
+div.popup_msg_event_area {
+  display: block;
+  position: fixed;
+  width: 100%;
+  height: 100vh;
+  top: 0%;
+  left: 50%;
+  z-index: 9999;
+  background: rgba(0,0,0,0.6);
+  transform: translateX(-50%);
+  -webkit-transform: translateX(-50%);
+  -ms-transform: translateX(-50%);
+}
+
+div.popup_msg_event_main {
+  position: absolute;
+  z-index: 9998;
+  top: 50%;
+  left: 50%;
+  height: -moz-fit-content; /* Firefox */
+  height: :fit-content; /* other browsers */  
+  margin: 10px, 10px;
+  padding: 30px;
+  max-width: 1200px;
+  width: 100%;
+  background-color: #FAFBE5;
+  color: #000000;
+  transform: translateX(-50%) translateY(-50%);
+}
+
+div.popup_msg_event_explanation {
+  background-color: #fff;
+  border: 1px solid #CCCCCC;
+  float: left;
+  width: calc(100% - 450px);
+  height: 350px;
+  padding: 1.0em;
+  margin: 0.5em 1.0em;
 }
 
 .canvasjs-chart-credit {
@@ -512,8 +563,6 @@ table.card_image td{
   border-left: 30px solid transparent;
   border-right: 30px solid transparent;
   border-top: 30px solid #004831;
-}
-
 }
 
 

@@ -214,6 +214,17 @@ function get_table_ggp_earth_all(){
 }
 endif;
 
+if( !function_exists( ' get_table_ggp_earth') ):
+function get_table_ggp_earth($earth_no){
+  $table = TABLE_NAME_GGP_EARTH;
+  global $wpdb;
+  $query = "SELECT * FROM {$table} WHERE earth_no = {$earth_no}";
+  $records = $wpdb->get_results( $query );
+
+  return $records;
+}
+endif;
+
 if( !function_exists( 'get_table_ggp_earth_event_card_turn') ):
 function get_table_ggp_earth_event_card_turn($earth_no){
   $table = TABLE_NAME_GGP_EARTH;
@@ -513,11 +524,21 @@ function update_table_ggp_team_co2_quota($earth_no, $team_no, $co2_quota){
 }
 endif;
 
-if(! function_exists( 'get_ggp_team_all') ):
+if(! function_exists( 'get_table_ggp_team_all') ):
 function get_table_ggp_team_all(){
   $table = TABLE_NAME_GGP_TEAM;
   global $wpdb;
   $query = "SELECT * FROM {$table}";
+  $records = $wpdb->get_results( $query );
+  return $records;
+}
+endif;
+
+if(! function_exists( 'get_table_ggp_team') ):
+function get_table_ggp_team($earth_no){
+  $table = TABLE_NAME_GGP_TEAM;
+  global $wpdb;
+  $query = "SELECT * FROM {$table} WHERE earth_no = {$earth_no}";
   $records = $wpdb->get_results( $query );
   return $records;
 }
@@ -1691,6 +1712,17 @@ function update_table_ggp_cardinfo_instance_eco_package($earth_no, $team_no){
       continue;
     }
   }
+}
+endif;
+
+if( !function_exists( 'get_table_ggp_cardinfo_instance_keyword') ):
+function get_table_ggp_cardinfo_instance_keyword($earth_no, $team_no, $keyword){
+  global $wpdb;
+  $table = TABLE_NAME_GGP_CARDINFO_INSTANCE;
+  $where = $wpdb->prepare(" WHERE earth_no LIKE %s AND team_no LIKE %s AND keyword LIKE %s",$earth_no, $team_no, $keyword);
+  $query = "SELECT * FROM {$table} " . $where;
+  $records = $wpdb->get_results($query);
+  return $records;
 }
 endif;
 

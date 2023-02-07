@@ -323,7 +323,7 @@ for($tree_card_no = 0; $tree_card_no < count($ggp_cardinfo_db); $tree_card_no++)
       <td><input type="text" id="ggp_cardinfo_db[<?=$i ?>][url]" name="ggp_cardinfo_db[<?=$i ?>][url]" value="<?=$ggp_cardinfo_db[$i]->url ?>" style="width:100%;"></td>
       <td><input type="text" id="ggp_cardinfo_db[<?=$i ?>][keyword]" name="ggp_cardinfo_db[<?=$i ?>][keyword]" value="<?=$ggp_cardinfo_db[$i]->keyword ?>" style="width:100%;"></td>
       <td><input type="text" id="ggp_cardinfo_db[<?=$i ?>][money]" name="ggp_cardinfo_db[<?=$i ?>][money]" value="<?=$ggp_cardinfo_db[$i]->money ?>" style="width:100%;"></td>
-      <td><input type="text" id="ggp_cardinfo_db[<?=$i ?>][rice]" name="ggp_cardinfo_db[<?=$i; ?>][rice]" value="<?=$ggp_cardinfo_db[$i]->rice ?>" style="width:100%;"></td>
+      <td><input type="text" id="ggp_cardinfo_db[<?=$i ?>][rice]" name="ggp_cardinfo_db[<?=$i; ?>][rice]" value="<?=$ggp_cardinfo_db[$i]->rice ?>" <?php if($ggp_cardinfo_db[$i]->phase == "reduction"){ ?>disabled<?php } ?> style="width:100%;"></td>
       <td><input type="text" id="ggp_cardinfo_db[<?=$i ?>][co2]" name="ggp_cardinfo_db[<?=$i ?>][co2]" value="<?=$ggp_cardinfo_db[$i]->co2 ?>" style="width:100%;"></td>
       <td><input type="text" id="ggp_cardinfo_db[<?=$i ?>][turn]" name="ggp_cardinfo_db[<?=$i ?>][turn]" value="<?=$ggp_cardinfo_db[$i]->turn ?>" style="width:100%;"></td>
       <td style="text-align:center;"><input type="checkbox" id="ggp_cardinfo_db[<?=$i ?>][is_visible]" name="ggp_cardinfo_db[<?=$i ?>][is_visible]" value="1" <?php checked(1, $ggp_cardinfo_db[$i]->is_visible); ?>></td>
