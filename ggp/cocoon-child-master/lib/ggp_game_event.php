@@ -95,7 +95,7 @@ if($select_no != "" && allow_insert_table_ggp_action($token) ){
       //台風で田んぼと工場がやられる
           for($team_no = 0; $team_no < $ggp_init_perteam; $team_no++){
             event_disaster($earth_no, $team_no);
-            insert_table_ggp_action($token, $earth_no, $team_no, 'event' ,'',$ggp_event_list[$ggp_event_mode]['text'],'blackbox_question_open.png','','',0,0,0);
+            insert_table_ggp_action($token, $earth_no, $team_no, 'event' ,$ggp_team[$team_no]->turn - 1, $ggp_event_list[$ggp_event_mode]['text'],'blackbox_question_open.png','','',0,0,0);
             update_table_ggp_earth_event_card_count($earth_no, $ggp_earth[0]->event_card_count + 1 );
           }
         break;

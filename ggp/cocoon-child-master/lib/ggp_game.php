@@ -541,7 +541,7 @@ function show_ggp_gameboard_main(){
             insert_table_ggp_message($earth_no, $ggp_team[$team_no]->turn.'ターン目 : 「'.$ggp_team[$team_no]->teamname.'」チームが'.$ggp_msg_array[$phase].'（'.$ggp_cardinfo[$phase][$card_no]['name'].'）。');
             update_table_ggp_cardinfo_instance_is_valid($earth_no, $team_no, "clean_energy",NULL);
             update_table_ggp_team_other_clean_energy($earth_no, $team_no, 1);
-            $reduction_selected_explanation = '<p>工場のクリーンエネルギー宣言をした。「' . $phase_name['make'] . '」でクリーンエネルギーを使うカード以外が選択できなくなった。</p><p>使用できなくなるカード<br>';
+            $reduction_selected_explanation = '<p>工場のクリーンエネルギー宣言をした。「' . $phase_name['make'] . '」でクリーンエネルギーを使うカード以外が選択できなくなるが、売り上げが'. $ggp_other_clean_energy*100 . '&#037;アップする。</p><p>使用できなくなるカード<br>';
 
             foreach($ggp_event_not_clean_energy as $line){
               if($line == "")continue;
@@ -549,6 +549,7 @@ function show_ggp_gameboard_main(){
               $card_info_line = get_table_ggp_cardinfo_instance_keyword($earth_no, $team_no, $line);
               $reduction_selected_explanation .= '&nbsp;・'. $card_info_line[0]->name . ' <br>';
             }
+            $reduction_selected_explanation .= '売り上げ<br>&nbsp;'. $ggp_init_sales*(1+$magnification) . '万円&rarr;'.$ggp_init_sales*(1+$magnification+$ggp_other_clean_energy) . '万円</p>';
           break;
 
           case "robot" :
@@ -748,12 +749,13 @@ function show_ggp_gameboard_main(){
       <?php if($reduction_selected == "1"){ ?>
       <div id="popup_msg_event_area" class="popup_msg_event_area">
       <div class="popup_msg_event_main">
+      <p class="popup_msg_event_main_p">「<?=$phase_name['reduction'] ?>」で選んだカードの詳細</p>
         <a class="close_btn_popup_event" style="color:black;" href="javascript:OnClick_close_popup_event_area();"><i class="fas fa-times"></i></a>
         <div class="card" sytle="border:black;">
           <div class="icon"><img src="/wp-content/uploads/<?=$ggp_cardinfo[$phase][$card_no]['url'] ?>"></div>
             <p class="card_text"><?=$ggp_cardinfo[$phase][$card_no]['name'] ?></p>
             <p class="card_text"><?=$ggp_cardinfo[$phase][$card_no]['description'] ?></p>
-            <p class="card_text"><i class="fas fa-coins"></i>&nbsp;必要なお金<br>&nbsp;<?=$ggp_cardinfo[$phase][$card_no]['rice'] ?>トンの米　<?=$ggp_cardinfo[$phase][$card_no]['money'] ?>万円</p>
+            <p class="card_text"><i class="fas fa-coins"></i>&nbsp;必要なお金<br>&nbsp;<?=$ggp_cardinfo[$phase][$card_no]['money'] ?>万円</p>
             <p class="card_text"><i class="fas fa-heart"></i>&nbsp;必要なターン数<br>&nbsp;<?=$ggp_cardinfo[$phase][$card_no]['turn'] ?>ターン</p>
             <p class="card_text"><i class="fas fa-skull-crossbones"></i>&nbsp;二酸化炭素ガス<br>&nbsp;<?=$ggp_cardinfo[$phase][$card_no]['co2'] ?>kg</p>
           </div>

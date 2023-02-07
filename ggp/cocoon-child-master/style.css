@@ -491,6 +491,10 @@ table.ggp_action_table {
   font-size: 0.7em;
 }
 
+p.popup_msg_event_main_p {
+  font-weight: bold;
+  margin-bottom: 0;
+}
 
 /************************************
 ** レスポンシブデザイン用のメディアクエリ
@@ -563,6 +567,35 @@ table.card_image td{
   border-left: 30px solid transparent;
   border-right: 30px solid transparent;
   border-top: 30px solid #004831;
+}
+
+div.popup_msg_event_explanation {
+  background-color: #fff;
+  border: 1px solid #CCCCCC;
+  float: left;
+  width: 90%;
+  height: 350px;
+  padding: 1.0em;
+  margin: 0.5em 1.0em;
+}
+
+div.popup_msg_event_area {
+  position: absolute;
+  background: none;
+}
+
+div.popup_msg_event_main {
+  position: absolute;
+  z-index: 9998;
+  top: 20%;
+  left: 0%;
+  margin: 10px, 10px;
+  padding: 0.5em;
+  width: 100%;
+  background-color: #FAFBE5;
+  overflow: hidden;
+  color: #000000;
+  transform: none;
 }
 
 

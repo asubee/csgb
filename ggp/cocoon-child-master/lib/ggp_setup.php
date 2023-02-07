@@ -637,14 +637,25 @@ $mode = $_POST['mode'];
 $earth_no = $_POST['earth_no'];
 $team_no = $_POST['team_no'];
 $ggp_phase_name = get_option('ggp_phase_name');
+$ggp_team = get_db_table_records(TABLE_NAME_GGP_TEAM,'');
+$rollback_turn = $ggp_team[$earth_no*$ggp_init_perteam + $team_no]->turn - 1;
+$team_rollback_transaction = get_db_table_ggp_action_turn($earth_no, $team_no, $rollback_turn);
+$error_msg = "";
+
+if($mode == "rollback"){
+  foreach($team_rollback_transaction as $iterator){
+    if($iterator->phase == "event"){
+      $error_msg = "イベントのロールバックはできません";
+      break;
+    }
+  }
+}
 
 // ロールバックが実行された場合の処理
-if($mode == "rollback"){
-  $ggp_team = get_db_table_records(TABLE_NAME_GGP_TEAM,'');
-  $rollback_turn = $ggp_team[$earth_no*$ggp_init_perteam + $team_no]->turn - 1;
-  $team_rollback_transaction = get_db_table_ggp_action_turn($earth_no, $team_no, $rollback_turn);
-  delete_table_ggp_action_rollback($earth_no, $team_no, $rollback_turn);
+// ロールバック対象にeventが含まれる場合はロールバック不可
+if($mode == "rollback" && $error_msg == ""){
 
+  delete_table_ggp_action_rollback($earth_no, $team_no, $rollback_turn);
   foreach($team_rollback_transaction as $iterator){
     $ggp_earth = get_db_table_records_ggp(TABLE_NAME_GGP_EARTH,"earth_no",$earth_no);
     $ggp_team = get_db_table_records(TABLE_NAME_GGP_TEAM,'');
@@ -662,18 +673,65 @@ if($mode == "rollback"){
         // 特殊処理は特段不要
         break;
       case "reduction" :
-        if($iterator->keyword == "tree"){
-          update_table_ggp_action_tree($earth_no, $team_no, -$iterator->quantity);
-        }else if($iterator->keyword = "buy"){
-          $ggp_quota_co2 = $ggp_earth[0]->co2_quota;
-          update_table_ggp_earth_quota($earth_no, $ggp_quota_co2 - $iterator->quantity);
-          update_table_ggp_team_co2_quota($earth_no, $team_no, $ggp_team[$team_no]->co2_quota - $iterator->quantity);
-        }
+        switch($iterator->keyword){
+          case "tree" :
+            update_table_ggp_action_tree($earth_no, $team_no, -$iterator->quantity);
+          break;
+          case "buy" :
+            $ggp_quota_co2 = $ggp_earth[0]->co2_quota;
+            update_table_ggp_earth_quota($earth_no, $ggp_quota_co2 - $iterator->quantity);
+            update_table_ggp_team_co2_quota($earth_no, $team_no, $ggp_team[$team_no]->co2_quota - $iterator->quantity);
+          break;
+          case "ev_collaboration" :
+            rollback_table_ggp_cardinfo_instance_ev_collaboration($earth_no, $team_no);
+            update_table_ggp_cardinfo_instance_is_valid($earth_no, $team_no, "ev_collaboration", 1);
+          break;
+          case "clean_energy" :
+            $ggp_event_not_clean_energy = get_option("ggp_event_not_clean_energy");
+            update_table_ggp_cardinfo_instance_is_valid($earth_no, $team_no, "clean_energy", 1);
+            update_table_ggp_team_other_clean_energy($earth_no, $team_no, 0);
+            foreach($ggp_event_not_clean_energy as $line){
+              if($line == "")continue;
+              update_table_ggp_cardinfo_instance_is_valid($earth_no, $team_no, $line, 1);
+            }
+          break;
+          case "robot" :
+            update_table_ggp_cardinfo_instance_is_valid($earth_no, $team_no, "robot", 1);
+            update_table_ggp_cardinfo_instance_is_visible($earth_no, $team_no, "robot_grow_rice", NULL);
+          break;
+          case "direct_store" :
+            update_table_ggp_cardinfo_instance_is_valid($earth_no, $team_no, "direct_store", 1);
+            update_table_ggp_event_direct_store($earth_no, $team_no, 0);
+          break;
+          case "solar_panel" :
+            update_table_ggp_cardinfo_instance_is_valid($earth_no, $team_no, "solar_panel", 1);
+            update_table_ggp_team_other_solar_panel($earth_no, $team_no, 0);
+          break;
+          case "eco_package" :
+            update_table_ggp_cardinfo_instance_is_valid($earth_no, $team_no, "eco_package", 1);
+            rollback_table_ggp_cardinfo_instance_eco_package($earth_no, $team_no);
+          break;
+          case "cm" :
+            update_table_ggp_cardinfo_instance_is_valid($earth_no, $team_no, "cm", 1);
+            update_table_ggp_team_other_cm($earth_no, $team_no, 0);
+          break;
+          case "pickup_litter" :
+            update_table_ggp_cardinfo_instance_is_valid($earth_no, $team_no, "pickup_litter", 1);
+            update_table_ggp_cardinfo_instance_is_visible($earth_no, $team_no, "buy_rice", 0);
+          break;
+          default :
+            $error_msg .= "不正なロールバックです。phase:" . $iterator->phase . " keyword:" .  $iterator->keyword;
+            error_log("不正なロールバックです。phase:" . $iterator->phase . " keyword:" .  $iterator->keyword);
+          break;
+        } // switch($iterator->keyword)
         break;
-
-    }
-  }
-}
+      default:
+        $error_msg .= "不正なロールバックです。phase:" . $iterator->phase . " keyword:" .  $iterator->keyword;
+        error_log("不正なロールバックです。phase:" . $iterator->phase . " keyword:" .  $iterator->keyword);
+      break;
+    } // switch($iterator->phase)
+  }   // foreach($team_rollback_transaction as $iterator)
+}     // if($mode=="rollback")
 
 $ggp_team = get_db_table_records(TABLE_NAME_GGP_TEAM,'');
 $ggp_action_rice = get_db_table_records(TABLE_NAME_GGP_ACTION_RICE,'');
@@ -688,6 +746,12 @@ $ggp_action = get_db_table_ggp_action($earth_no, $team_no);
 
 <div class="wrap">
   <h2>ロールバック</h2>
+  <?php if($error_msg != ""){ ?>
+    <div class="error-msg">
+      <?=$error_msg ?>
+    </div>
+  <?php } ?>
+
   <div class="metabox-holder">
     <div class="postbox">
       <h3 class="hndle"><span>各チームの状況／ロールバック</span></h3>

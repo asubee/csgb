@@ -1696,6 +1696,25 @@ function update_table_ggp_cardinfo_instance_ev_collaboration($earth_no, $team_no
 }
 endif;
 
+if( !function_exists( 'rollback_table_ggp_cardinfo_instance_ev_collaboration') ):
+function rollback_table_ggp_cardinfo_instance_ev_collaboration($earth_no, $team_no){
+  $table_rollback = TABLE_NAME_GGP_CARDINFO_INSTANCE;
+  $table_master = TABLE_NAME_GGP_CARDINFO;
+  global $wpdb;
+  // マスタテーブルの取得
+  $query_master = "SELECT money FROM {$table_master} WHERE keyword = 'car_denki'";
+  $money = $wpdb->get_results($query_master);
+
+  // トランザクションテーブルの更新
+  $data = array('money' => $money[0]->money);
+  $where = array('earth_no' => $earth_no, 'team_no' => $team_no, 'keyword' => 'car_denki');
+  $format = array('%d');
+  $where_format = array('%d','%d','%s');
+  return update_db_table_record($table_rollback, $data, $where, $format, $where_format);
+
+}
+endif;
+
 if( !function_exists( 'update_table_ggp_cardinfo_instance_eco_package') ):
 function update_table_ggp_cardinfo_instance_eco_package($earth_no, $team_no){
   $table = TABLE_NAME_GGP_CARDINFO_INSTANCE;
@@ -1704,6 +1723,25 @@ function update_table_ggp_cardinfo_instance_eco_package($earth_no, $team_no){
   foreach($ggp_cardinfo as $line){
     if($line->phase == 'to_store'){
       $data = array('co2' => $line->co2*(1+$ggp_other_eco_package));
+      $where = array('id' => $line->id, 'earth_no' => $earth_no, 'team_no'=>$team_no);
+      $format = array('%d');
+      $where_format = array('%d','%d','%d');
+      update_db_table_record($table, $data, $where, $format, $where_format);
+    }else{
+      continue;
+    }
+  }
+}
+endif;
+
+if( !function_exists( 'rollback_table_ggp_cardinfo_instance_eco_package') ):
+function rollback_table_ggp_cardinfo_instance_eco_package($earth_no, $team_no){
+  $table = TABLE_NAME_GGP_CARDINFO_INSTANCE;
+  $ggp_cardinfo = get_table_ggp_cardinfo_instance($earth_no, $team_no);
+  $ggp_other_eco_package = get_option('ggp_other_eco_package');
+  foreach($ggp_cardinfo as $line){
+    if($line->phase == 'to_store'){
+      $data = array('co2' => $line->co2/(1+$ggp_other_eco_package));
       $where = array('id' => $line->id, 'earth_no' => $earth_no, 'team_no'=>$team_no);
       $format = array('%d');
       $where_format = array('%d','%d','%d');
