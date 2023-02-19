@@ -497,11 +497,16 @@ $earth_no = $_POST['earth_no'];
 $team_no = $_POST['team_no'];
 $auto_reload = $_POST['auto_reload'];
 $ggp_phase_name = get_option('ggp_phase_name');
+$ggp_init_perteam = get_option('ggp_init_perteam');
 
 if($earth_no == "")$earth_no = 0;
 if($team_no == "")$team_no = 0;
 
 $ggp_action = get_db_table_ggp_action($earth_no, $team_no);
+$ggp_other_solar_panel = 0;
+if($ggp_team[$earth_no*$ggp_init_perteam + $team_no]->other_valid_solar_panel == "1"){
+  $ggp_other_solar_panel = - get_option('ggp_other_solar_panel');
+}
 
 ?>
 <link href="https://use.fontawesome.com/releases/v5.6.1/css/all.css" rel="stylesheet">
@@ -566,9 +571,9 @@ $ggp_action = get_db_table_ggp_action($earth_no, $team_no);
           <input type="hidden" name="team_no" value=<?=$ggp_team[$i]->team_no ?>>
           <td><?=$ggp_team[$i]->teamname ?></td>
           <td align="center"><?=$ggp_team[$i]->turn ?></td>
-          <td align="center"><?php echo ($ggp_action_rice[$i]->to_store)/5; ?></td>
-          <td align="center"><?php echo ($ggp_action_tree[$i]->tree_num); ?></td>
-          <td align="center"><?php echo ($ggp_action_tree[$i]->reduction_co2); ?></td>
+          <td align="center"><?=$ggp_action_rice[$i]->to_store/5 ?></td>
+          <td align="center"><?=$ggp_action_tree[$i]->tree_num ?></td>
+          <td align="center"><?=$ggp_team[$i]->other_valid_solar_panel == "1" ? $ggp_action_tree[$i]->reduction_co2 + $ggp_other_solar_panel : $ggp_action_tree[$i]->reduction_co2 ?></td>
           <td align="right"><?=$ggp_team[$i]->money ?></td>
           <td align="right"><?=$ggp_team[$i]->co2 ?></td>
           <td align="right"><?=$ggp_team[$i]->co2_quota ?></td>
@@ -641,6 +646,7 @@ $ggp_team = get_db_table_records(TABLE_NAME_GGP_TEAM,'');
 $rollback_turn = $ggp_team[$earth_no*$ggp_init_perteam + $team_no]->turn - 1;
 $team_rollback_transaction = get_db_table_ggp_action_turn($earth_no, $team_no, $rollback_turn);
 $error_msg = "";
+$ggp_other_solar_panel = - get_option('ggp_other_solar_panel');
 
 if($mode == "rollback"){
   foreach($team_rollback_transaction as $iterator){
@@ -650,6 +656,8 @@ if($mode == "rollback"){
     }
   }
 }
+
+
 
 // ロールバックが実行された場合の処理
 // ロールバック対象にeventが含まれる場合はロールバック不可
@@ -720,14 +728,18 @@ if($mode == "rollback" && $error_msg == ""){
             update_table_ggp_cardinfo_instance_is_visible($earth_no, $team_no, "buy_rice", 0);
           break;
           default :
-            $error_msg .= "不正なロールバックです。phase:" . $iterator->phase . " keyword:" .  $iterator->keyword;
-            error_log("不正なロールバックです。phase:" . $iterator->phase . " keyword:" .  $iterator->keyword);
+            // co2削減系は、reduction、かつkeywordが空欄なのでスルーする。
+            // それ以外の別のkeywordが入っている場合は想定していない入力なのでエラーを吐く
+            if($iterator->keyword != ""){
+              $error_msg .= "不正なロールバックです。phase:" . $iterator->phase . " keyword:" .  $iterator->keyword;
+              error_log("不正なロールバックです。phase:" . $iterator->phase . " keyword:" .  $iterator->keyword);
+            }
           break;
         } // switch($iterator->keyword)
         break;
       default:
-        $error_msg .= "不正なロールバックです。phase:" . $iterator->phase . " keyword:" .  $iterator->keyword;
-        error_log("不正なロールバックです。phase:" . $iterator->phase . " keyword:" .  $iterator->keyword);
+          $error_msg .= "不正なロールバックです。phase:" . $iterator->phase . " keyword:" .  $iterator->keyword;
+          error_log("不正なロールバックです。phase:" . $iterator->phase . " keyword:" .  $iterator->keyword);
       break;
     } // switch($iterator->phase)
   }   // foreach($team_rollback_transaction as $iterator)
@@ -767,9 +779,9 @@ $ggp_action = get_db_table_ggp_action($earth_no, $team_no);
           <td align="center"><?=$ggp_team[$i]->team_no ?></td>
           <td><?=$ggp_team[$i]->teamname ?></td>
           <td align="center"><?=$ggp_team[$i]->turn ?></td>
-          <td align="center"><?php echo ($ggp_action_rice[$i]->to_store)/5; ?></td>
-          <td align="center"><?php echo ($ggp_action_tree[$i]->tree_num); ?></td>
-          <td align="center"><?php echo ($ggp_action_tree[$i]->reduction_co2); ?></td>
+          <td align="center"><?=$ggp_action_rice[$i]->to_store/5 ?></td>
+          <td align="center"><?=$ggp_action_tree[$i]->tree_num ?></td>
+          <td align="center"><?=$ggp_team[$i]->other_valid_solar_panel == "1" ? $ggp_action_tree[$i]->reduction_co2 + $ggp_other_solar_panel : $ggp_action_tree[$i]->reduction_co2 ?></td>
           <td align="right"><?=$ggp_team[$i]->money ?></td>
           <td align="right"><?=$ggp_team[$i]->co2 ?></td>
           <td align="right"><?=$ggp_team[$i]->co2_quota ?></td>
@@ -782,7 +794,7 @@ $ggp_action = get_db_table_ggp_action($earth_no, $team_no);
           <input type="hidden" name="earth_no" value=<?=$ggp_team[$i]->earth_no ?>>
           <input type="hidden" name="team_no" value=<?=$ggp_team[$i]->team_no ?>>
           <input type="hidden" name="mode" value="rollback">
-          <td align="center" style="border: none; background-color: #F9F9F9;"><?php submit_button("取り消す",'primary','update',false) ?></td>
+          <td align="center" style="border: none; background-color: #F9F9F9;"><?php if($ggp_team[$i]->earth_no == $earth_no && $ggp_team[$i]->team_no == $team_no){ submit_button("取り消す",'primary','update',false); }else{ ?><input type="submit" name="update" id="update" class="button button-primary" value="取り消す" disabled> <?php } ?></td>
           </form>
           </tr>
           <?php } ?>

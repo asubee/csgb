@@ -241,14 +241,14 @@ if($select_no != "" && allow_insert_table_ggp_action($token) ){
           <?php }else if($select_no == NULL){
             // 選択されていない状態（初期状態）
           ?>
-            <input class="btn-select-event" type="submit" value="No.<?=$i+1 ?> ">
+            <input class="btn-select-event" type="submit" value="　No.<?=$i+1 ?>　">
             <input type="hidden" id="ggp_event_mode" name="ggp_event_mode" value="<?=$random_no[$i] ?>">
           <?php }else if ($select_no != NULL && $i == $select_no){
             // カードが選択された場合、かつ選択された番号の場合
           ?>
             <input class="btn-select-event-selected" type="submit" value="<?=$ggp_event_list[$ggp_event_mode]['text'] ?>" disabled>
           <?php }else { ?>
-            <input class="btn-select-event" type="submit" value="No.<?=$i+1 ?>" disabled>
+            <input class="btn-select-event" type="submit" value="　No.<?=$i+1 ?>　" disabled>
           <?php } ?>
           </td></tr>
           </form>

@@ -57,4 +57,8 @@ return $return_html;
 }
 endif;
 
+add_shortcode('shortcode_test','shortcode_test');
+function shortcode_test(){
+  return "<p>test</p>";
+}
 

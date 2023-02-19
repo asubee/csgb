@@ -270,6 +270,12 @@ p.card_text_err {
   color: red;
   margin-bottom:0.5em !important;
 }
+
+p.event_explanation_text {
+  line-height: 1.25em;
+  margin-bottom: 1.0em !important;
+}
+
 .ggp-msg {
   float: right;
   padding: 0.5em;

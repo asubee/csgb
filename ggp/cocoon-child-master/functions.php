@@ -11,13 +11,13 @@ function mytheme_admin_enqueue() {
 }
 add_action( 'admin_enqueue_scripts', 'mytheme_admin_enqueue' );
 
-require_once(get_stylesheet_directory().'/lib/ggp_game.php');
-require_once(get_stylesheet_directory().'/lib/ggp_game_event.php');
+//require_once(get_stylesheet_directory().'/lib/ggp_game.php');
+//require_once(get_stylesheet_directory().'/lib/ggp_game_event.php');
 require_once(get_stylesheet_directory().'/lib/ggp_setup.php');
 require_once(get_stylesheet_directory().'/lib/db.php');
-require_once(get_stylesheet_directory().'/lib/ggp_graph.php');
-require_once(get_stylesheet_directory().'/lib/ggp_ajax.php');
-require_once(get_stylesheet_directory().'/lib/ggp_testcode.php');
+//require_once(get_stylesheet_directory().'/lib/ggp_graph.php');
+//require_once(get_stylesheet_directory().'/lib/ggp_ajax.php');
+//require_once(get_stylesheet_directory().'/lib/ggp_testcode.php');
 require_once(get_stylesheet_directory().'/lib/ggp_common.php');
 
 

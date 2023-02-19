@@ -17,6 +17,7 @@ session_start();
 $mode = $_POST['mode'];
 $earth_no = $_POST['earth_no'];
 $team_no = $_POST['team_no'];
+$voted = $_POST['voted'];
 $action_details_earth_no = $_POST['action_details_earth_no'];
 $action_details_team_no = $_POST['action_details_team_no'];
 $vote_earth_no = $_POST['vote_earth_no'];
@@ -28,20 +29,27 @@ $earth_info = get_table_ggp_earth_all();
 $team_action_tree_info = get_table_ggp_action_tree_all();
 $ggp_action_rice = get_db_table_records(TABLE_NAME_GGP_ACTION_RICE,'');
 $ggp_action = get_db_table_ggp_action($action_details_earth_no, $action_details_team_no);
+$ggp_init_perteam = get_option('ggp_init_perteam');
 $error_msg = "";
 
 if($earth_no != "" && $team_no == "") ggp_error("earth_no、またはteam_noが不正な値です。earth_no=" . $earth_no . " team_no = ". $team_no);
 if($earth_no == "" && $team_no != "") ggp_error("earth_no、またはteam_noが不正な値です。earth_no=" . $earth_no . " team_no = ". $team_no);
 
-
+//投票を実施した場合の処理
 if( ($vote_earth_no != "") &&
     ($vote_team_no != "") &&
     (isset($_POST['token']) == TRUE) &&
     (isset($_SESSION['token']) == TRUE) &&
     ($_POST['token'] == $_SESSION['token'])){
-  update_table_ggp_team_vote($vote_earth_no, $vote_team_no);
+  update_table_ggp_team_vote($vote_earth_no, $vote_team_no, $earth_no, $team_no);
   $team_info = get_table_ggp_team_all();
+  $voted = 1;
   $error_msg = "「" . $_POST['submit'] . "」チームに投票しました！";
+}
+
+//投票済みチームがアクセスした場合には投票ボタンを非表示にする
+if($earth_no != "" && $team_no != ""){
+  $voted = $team_info[$earth_no*$ggp_init_perteam + $team_no]->voted;
 }
 
 // 新しいトークンの発行
@@ -258,6 +266,7 @@ ob_start();
         <input type="hidden" id="mode" name="mode" value="emission_trading">
         <input type="hidden" name="earth_no" value="<?=$earth_no ?>">
         <input type="hidden" name="team_no" value="<?=$team_no ?>">
+        <input type="hidden" name="voted" value="<?=$voted ?>">
         <input type="hidden" name="is_general" value="<?=$is_general ?>">
         <?php if($mode == 'emission_trading'){ ?>
         <input class="btn-select-event" type="submit" value="二酸化炭素排出量を買う(<?=$emission_trading_value?>万円／200kg）" disabled>
@@ -474,6 +483,7 @@ ob_start();
 </script>
 
 <h2>投票</h2>
+<?php if($voted == "" || $voted == "0"){ ?>
 <p>いちばん良いと思ったチームに投票してください！</p>
 <div class="vote">
   <?php foreach($team_info as $iterator){ ?>
@@ -483,6 +493,7 @@ ob_start();
       <input type="hidden" name="earth_no" value="<?=$earth_no ?>">
       <input type="hidden" name="team_no" value="<?=$team_no ?>">
       <input type="hidden" name="token" value="<?=$token ?>">
+      <input type="hidden" name="voted" value="1">
       <input type="hidden" name="is_general" value="<?=$is_general ?>">
       <input type="hidden" id="vote_earth_no" name="vote_earth_no" value="<?=$iterator->earth_no ?>">
       <input type="hidden" id="vote_team_no" name="vote_team_no" value="<?=$iterator->team_no ?>">
@@ -491,8 +502,12 @@ ob_start();
   </div>
   <?php } ?>
 </div>
+<?php }else{ ?>
+<p>投票済みです。</p>
+<?php } ?>
 
 <?php if($earth_no == "" && $team_no == ""){ ?>
+
 <!-- 投票結果のグラフを出力 -->
 <div class="result_canvas_single_column">
 <canvas id="score_graph"></canvas>
@@ -569,6 +584,7 @@ ob_start();
           <input type="hidden" id="mode" name="mode" value="<?=$mode ?>">
           <input type="hidden" name="earth_no" value="<?=$earth_no ?>">
           <input type="hidden" name="team_no" value="<?=$team_no ?>">
+          <input type="hidden" name="voted" value="<?=$voted ?>">
           <input type="hidden" name="is_general" value="<?=$is_general ?>">
           <input type="hidden" id="action_details_earth_no" name="action_details_earth_no" value="<?=$iterator->earth_no ?>">
           <input type="hidden" id="action_details_team_no" name="action_details_team_no" value="<?=$iterator->team_no ?>">

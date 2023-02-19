@@ -284,7 +284,8 @@ endif;
 * 工場のクリーンエネルギー宣言    other_valid_clean_energy  int         0ならfalse, 1ならtrue
 * CMを打つ                        other_valid_cm            int         0ならfalse, 1ならtrue
 * 投票ランキング                  score                     int         投票数
-***********************************************************************************************/
+* 投票済みフラグ                  voted                     int         0ならfalse, 1ならtrue
+* ***********************************************************************************************/
 if( !function_exists( 'create_table_ggp_team' ) ):
 function create_table_ggp_team() {
   if (is_db_table_exist(TABLE_NAME_GGP_TEAM) ){
@@ -310,6 +311,7 @@ function create_table_ggp_team() {
           other_valid_clean_energy int,
           other_valid_cm int,
           score int,
+          voted int,
           PRIMARY KEY(earth_no, team_no)
           );";
 
@@ -349,7 +351,8 @@ function reset_table_ggp_team(){
       'other_valid_solar_panel' => 0,
       'other_valid_clean_energy' => 0,
       'other_valid_cm' => 0,
-      'score' => 0
+      'score' => 0,
+      'voted' => 0
     );
 
     $format = array(
@@ -358,6 +361,7 @@ function reset_table_ggp_team(){
       '%d',
       '%s',
       '%s',
+      '%d',
       '%d',
       '%d',
       '%d',
@@ -405,7 +409,8 @@ function reset_table_ggp_team_transaction(){
       'other_valid_solar_panel' => 0,
       'other_valid_clean_energy' => 0,
       'other_valid_cm' => 0,
-      'score' => 0
+      'score' => 0,
+      'voted' => 0
     );
 
     $where = array(
@@ -414,6 +419,7 @@ function reset_table_ggp_team_transaction(){
     );
 
     $format = array(
+      '%d',
       '%d',
       '%d',
       '%d',
@@ -702,18 +708,20 @@ endif;
 
 
 if(! function_exists( 'update_table_ggp_team_vote' ) ):
-function update_table_ggp_team_vote($earth_no, $team_no){
+function update_table_ggp_team_vote($vote_earth_no, $vote_team_no, $earth_no = "", $team_no = ""){
   $table = TABLE_NAME_GGP_TEAM;
   global $wpdb;
-  $where = $wpdb->prepare(' WHERE earth_no LIKE %s AND team_no LIKE %s', $earth_no, $team_no);
+
+  //現在のスコアの取得
+  $where = $wpdb->prepare(' WHERE earth_no LIKE %s AND team_no LIKE %s', $vote_earth_no, $vote_team_no);
   $query = "SELECT score FROM {$table}". $where;
   $records = $wpdb->get_results( $query );
-  error_log($query);
 
+  //投票の実施（スコアの更新）
   $data = array('score' => $records[0]->score + 1);
   $where = array(
-            'earth_no' => $earth_no,
-            'team_no' => $team_no
+            'earth_no' => $vote_earth_no,
+            'team_no' => $vote_team_no
             );
   $format = array(
             '%d'
@@ -722,8 +730,25 @@ function update_table_ggp_team_vote($earth_no, $team_no){
             '%d',
             '%d'
             );
-  return update_db_table_record($table, $data, $where, $format, $where_format);
+  update_db_table_record($table, $data, $where, $format, $where_format);
 
+  //投票済みフラグの更新
+  if($earth_no != "" && $team_no != ""){
+    $data = array('voted' => '1');
+    $where = array(
+            'earth_no' => $earth_no,
+            'team_no' => $team_no
+            );
+    $format = array(
+            '%d'
+            );
+    $where_format = array(
+            '%d',
+            '%d'
+            );
+    update_db_table_record($table, $data, $where, $format, $where_format);
+  }
+  return 0;
 }
 endif;
 
@@ -932,13 +957,18 @@ function check_co2_over($earth_no, $team_no, $phase, $card_no){
   $ggp_earth = get_db_table_records_ggp(TABLE_NAME_GGP_EARTH,"earth_no",$earth_no);
   $ggp_team = get_db_table_records_ggp(TABLE_NAME_GGP_TEAM,"earth_no",$earth_no);
   $reduction_quantity_tree = (int)(get_table_ggp_action_tree($earth_no, $team_no))[0]->reduction_co2;
+  $ggp_other_solar_panel = 0;
   $ggp_cardinfo = get_table_ggp_cardinfo_instance_nested($earth_no, $team_no);
+
+  if($ggp_team[$team_no]->other_valid_solar_panel == "1"){
+    $ggp_other_solar_panel = - get_option('ggp_other_solar_panel');
+  }
 
   if($phase == 'reduction'){
     return false;
-  }else if($ggp_earth[0]->co2 + $ggp_cardinfo[$phase][$card_no]['co2'] + $reduction_quantity_tree > $ggp_earth[0]->co2_quota){
+  }else if($ggp_earth[0]->co2 + $ggp_cardinfo[$phase][$card_no]['co2'] + $reduction_quantity_tree + $ggp_other_solar_panel > $ggp_earth[0]->co2_quota){
     return true;
-  }else if($ggp_team[$team_no]->co2 + $ggp_cardinfo[$phase][$card_no]['co2'] + $reduction_quantity_tree > $ggp_team[$team_no]->co2_quota){
+  }else if($ggp_team[$team_no]->co2 + $ggp_cardinfo[$phase][$card_no]['co2'] + $reduction_quantity_tree + $ggp_other_solar_panel > $ggp_team[$team_no]->co2_quota){
     return true;
   }else{
     return false;
