@@ -89,7 +89,7 @@ if($select_no != "" && allow_insert_table_ggp_action($token) ){
         set_parameter_ggp_event_preselect($ggp_event_mode, $ggp_earth[0]->event_card_count);
       }
 
-      insert_table_ggp_message($earth_no,'【イベント】' . $ggp_event_list[$ggp_event_mode]['text']);
+      insert_table_ggp_message($earth_no,'【イベント】' . $ggp_event_list[$ggp_event_mode]['text'], 1);
       switch( $ggp_event_list[$ggp_event_mode]['key'] ){
       case "disaster" :
       //台風で田んぼと工場がやられる
@@ -212,8 +212,7 @@ if($select_no != "" && allow_insert_table_ggp_action($token) ){
       </form>
       </div>
       </div>
-
-      <h1>ルーム No.<?=$earth_no ?> イベントルーレット</h1>
+      <h1>地球 No.<?=chr(ord('A') + $earth_no) ?> イベントルーレット</h1>
       <?php if($error_msg != ""){ ?>
       <div class="error-msg">
         <?=$error_msg ?>

@@ -1,0 +1,5 @@
+/var/www/html/wp-content/themes/cocoon-child-master
+/var/www/html/wp-content/themes/cocoon-master
+/var/www/html/wp-content/themes/twentytwenty
+/var/www/html/wp-content/themes/twentytwentyone
+/var/www/html/wp-content/themes/twentytwentytwo

@@ -119,7 +119,7 @@ if( !function_exists('show_ggp_gameboard_earth_select') ):
           <input type="hidden" id="earth_no" name="earth_no" value="<?=$i ?>">
           <input type="hidden" id="is_general" name="is_general" value="<?=$is_general ?>">
           <input type="hidden" id="mode" name="mode" value="select_team">
-          <input class="btn-select-team" type="submit" value="ルーム No.<?=$i ?>">
+          <input class="btn-select-team" type="submit" value="地球　No.<?=chr(ord('A') + $i) ?>">
           </td></tr>
           </form>
           <?php 
@@ -703,7 +703,7 @@ function show_ggp_gameboard_main(){
     for( $i = 0; $i < count($ggp_team); $i++){
       if($i == count($ggp_team) - 1 && $card_turn[0]->event_card_turn != $ggp_team[$team_no]->turn){
         update_table_ggp_earth_event_card_turn($earth_no, $ggp_team[$i]->turn);
-        insert_table_ggp_message($earth_no, '【イベント発生】イベントが発生しました。メインルームに戻ってください。',1);
+        insert_table_ggp_message($earth_no, '【イベント発生】イベントが発生しました。ファシリテータから案内がありますのでそのままお待ちください。',1);
         break;
       }
       if($ggp_team[$i]->turn == ($event_arise_turn[0]+1) && $ggp_team[$i]->turn == $ggp_team[$i + 1]->turn){
@@ -772,7 +772,7 @@ function show_ggp_gameboard_main(){
       <?php echo $ggp_team[$team_no]->teamname ?>
       </div>
       <div class="team-name">
-        <form method="post" action="">
+        <form method="post" action="" id="reload_btn">
           <input type="hidden" name="is_general" value="<?php echo $is_general; ?>">
           <input type="hidden" name="earth_no" value="<?php echo $earth_no; ?>">
           <input type="hidden" name="team_no" value="<?php echo $team_no; ?>">
@@ -1620,10 +1620,10 @@ function reSet()
 
 //ポップアップに追記する
 function add_popup_msg(message, id = "", important = ""){
-  if(important == "1"){
+  if(important == "1"){ //イベント発生時のポップアップ表示（全画面表示）
     document.getElementById("popup_msg_warning_area").style.display = "block";
     document.getElementById("popup_msg_warning_area").innerHTML += '<div class="popup_msg_warning"><a class="close-btn-popup-warning" style="color:black;"><i class="fas fa-times"></i></a> ' + message + '</div>';
-  }else{
+  }else {
     // ツールチップの class="invisible" を削除
     document.getElementById("popup_msg_area").style.display = "block";
     document.getElementById('popup_msg_area').innerHTML += '<div class="popup_msg"><a class="close-btn-popup" style="color:white;"><i class="fas fa-times"></i></a> ' + message + '</div>';
@@ -1646,6 +1646,9 @@ function add_popup_msg(message, id = "", important = ""){
       if(document.getElementById("popup_msg_warning_area").innerHTML == ""){
         document.getElementById("popup_msg_warning_area").style.display = "none";
       }
+      // バツ印を押したら画面を更新する
+      var fm = document.getElementById("reload_btn");
+      fm.submit();
   });
 
 }

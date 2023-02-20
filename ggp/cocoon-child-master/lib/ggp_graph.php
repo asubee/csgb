@@ -290,7 +290,7 @@ ob_start();
   var chart = new Chart(ctx, {
     type: 'bar',
     data: {
-      labels: [<?php foreach($earth_info as $iterator){echo "\"ルーム No." . $iterator->earth_no . "\","; } ?>],
+      labels: [<?php foreach($earth_info as $iterator){echo "\"地球 No." . chr(ord('A')+ $iterator->earth_no) . "\","; } ?>],
       datasets : [{
         label: '二酸化炭素ガス排出量',
         data: [<?php foreach($earth_info as $iterator){ echo "\"" . $iterator->co2 . "\","; } ?>],
