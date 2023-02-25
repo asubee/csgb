@@ -489,6 +489,7 @@ function register_ggp_game_watch(){
 }
 
 function add_ggp_game_watch(){
+$ggp_quota_turn = get_option('ggp_quota_turn');
 $ggp_team = get_db_table_records(TABLE_NAME_GGP_TEAM,'');
 $ggp_earth = get_db_table_records(TABLE_NAME_GGP_EARTH,'');
 $ggp_action_rice = get_db_table_records(TABLE_NAME_GGP_ACTION_RICE,'');
@@ -570,7 +571,7 @@ if($ggp_team[$earth_no*$ggp_init_perteam + $team_no]->other_valid_solar_panel ==
           <td align="center"><?=$ggp_team[$i]->team_no ?></td>
           <input type="hidden" name="team_no" value=<?=$ggp_team[$i]->team_no ?>>
           <td><?=$ggp_team[$i]->teamname ?></td>
-          <td align="center"><?=$ggp_team[$i]->turn ?></td>
+          <td align="center"><?=(($ggp_quota_turn - $ggp_team[$i]->turn + 1) . "/" . $ggp_quota_turn) ?></td>
           <td align="center"><?=$ggp_action_rice[$i]->to_store/5 ?></td>
           <td align="center"><?=$ggp_action_tree[$i]->tree_num ?></td>
           <td align="center"><?=$ggp_team[$i]->other_valid_solar_panel == "1" ? $ggp_action_tree[$i]->reduction_co2 + $ggp_other_solar_panel : $ggp_action_tree[$i]->reduction_co2 ?></td>

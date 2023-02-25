@@ -703,7 +703,7 @@ function show_ggp_gameboard_main(){
     for( $i = 0; $i < count($ggp_team); $i++){
       if($i == count($ggp_team) - 1 && $card_turn[0]->event_card_turn != $ggp_team[$team_no]->turn){
         update_table_ggp_earth_event_card_turn($earth_no, $ggp_team[$i]->turn);
-        insert_table_ggp_message($earth_no, '【イベント発生】イベントが発生しました。ファシリテータから案内がありますのでそのままお待ちください。',1);
+        insert_table_ggp_message($earth_no, '【イベント発生】イベントが発生しました。ファシリテータから案内があるまでお待ちください。',1);
         break;
       }
       if($ggp_team[$i]->turn == ($event_arise_turn[0]+1) && $ggp_team[$i]->turn == $ggp_team[$i + 1]->turn){
@@ -814,8 +814,8 @@ function show_ggp_gameboard_main(){
           <?php }?>
           <div class="return">
             <form method="post" name="timer">
-              <input type="text" class="textbox-timer" value="1">分
-              <input type="text" class="textbox-timer" value="0">秒
+              <input type="text" class="textbox-timer" value="0">分
+              <input type="text" class="textbox-timer" value="45">秒
               <input type="button" class="btn-timer" id="btn-timer" value="スタート" onclick="cntStart()">
               <input type="button" class="btn-timer" value="リセット" onclick="reSet()">
               <input type="hidden" name="is_general" value="<?php echo $is_general; ?>">
@@ -1611,8 +1611,8 @@ function tmWrite(int)
 //フォームを初期状態に戻す（リセット）関数
 function reSet()
 {
-  document.timer.elements[0].value="1";
-  document.timer.elements[1].value="0";
+  document.timer.elements[0].value="0";
+  document.timer.elements[1].value="45";
   document.timer.elements[2].disabled=false;
   document.getElementById("btn-timer").value ="スタート";
   clearInterval(timer1);
@@ -1645,10 +1645,10 @@ function add_popup_msg(message, id = "", important = ""){
       // 親要素（全画面のグレー半透明）に何も入っていなければ非表示にする
       if(document.getElementById("popup_msg_warning_area").innerHTML == ""){
         document.getElementById("popup_msg_warning_area").style.display = "none";
+        // ポップアップをすべて閉じたら画面を更新する
+        var fm = document.getElementById("reload_btn");
+        fm.submit();
       }
-      // バツ印を押したら画面を更新する
-      var fm = document.getElementById("reload_btn");
-      fm.submit();
   });
 
 }
