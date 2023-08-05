@@ -141,13 +141,13 @@ if( !function_exists('show_ggp_gameboard_earth_select') ):
 
 
 
-      <form method="post" action="/ggp_graph/">
+      <form method="post" action="/ggp-graph/">
       <tr><td>
       <input type="submit" value="結果のグラフを表示する">
       </td></tr>
       </form>
 
-<!-- ゲームをリセットするボタンをトップに表示（デバッグ時のみ）--->
+<!-- ゲームをリセットするボタンをトップに表示（デバッグ時のみ）-->
 <!--
       <tr><td><div style="width:100%; height:100px"></div></td></tr>
       <form method="post" action="">

@@ -14,7 +14,7 @@ ob_start();
 
 ?>
 
-<form method="post" action="/ggp_graph/">
+<form method="post" action="/ggp-graph/">
   <input type="hidden" name="team_no" value="0">
   <input type="hidden" name="earth_no" value="0">
   <input type="submit" value="submit">
